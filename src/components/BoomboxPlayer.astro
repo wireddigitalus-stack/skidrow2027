@@ -11,7 +11,7 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
 ---
 
 <section
-  class="bb-root relative overflow-hidden border-y border-white/10 bg-[#000000] py-12 sm:py-16 lg:py-20"
+  class="bb-root relative overflow-hidden border-y border-white/10 bg-[#000000] py-8 sm:py-12 lg:py-14"
   data-tracks={tracksJson}
 >
   <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(226,28,33,0.16)_0%,transparent_65%)]" />
@@ -61,12 +61,14 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
     </div>
 
     <!-- ==================== INTERACTIVE 1980s BOOMBOX STAGE ==================== -->
-    <div class="relative mx-auto mt-6 w-full max-w-4xl select-none">
-      <div
-        class="bb-stage relative aspect-[3/2] w-full overflow-hidden bg-black"
-        data-powered="true"
-        data-playing="false"
-      >
+    <div class="relative mx-auto mt-3 w-full max-w-4xl select-none">
+      <!-- Crop unused black air above the boombox handle without shifting any percentage-mapped overlays -->
+      <div class="overflow-hidden">
+        <div
+          class="bb-stage relative -mt-[17%] -mb-[4%] aspect-[3/2] w-full overflow-hidden bg-black"
+          data-powered="true"
+          data-playing="false"
+        >
         <!-- Paid Adobe Stock 1980s Boombox Hardware Photo -->
         <img
           src="/images/boombox-1980s.jpg"
@@ -331,6 +333,7 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
 
         <!-- Power-Off Dimmer Veil -->
         <div class="bb-power-veil pointer-events-none absolute inset-0 hidden bg-black/75 transition-opacity"></div>
+        </div>
       </div>
 
       <!-- ==================== LIVE 32-BAND SPECTRUM GRAPH & DIGITAL DECK ==================== -->
