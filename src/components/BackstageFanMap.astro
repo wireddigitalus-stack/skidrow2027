@@ -102,14 +102,21 @@
         </button>
       </div>
 
-      <!-- Right Controls: Tour Stops Overlay + Globe Region Jump + Spin -->
+      <!-- Right Controls: Tour Dates + Optional Route Arcs + Globe Region Jump + Spin -->
       <div class="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
           id="toggle-tour-overlay"
           class="border border-amber-400/70 bg-amber-500/15 px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-amber-300 uppercase transition-colors hover:bg-amber-500/25"
         >
-          &#9733; 2027 Tour Stops: ON
+          &#9733; 2027 Tour Dates: ON
+        </button>
+        <button
+          type="button"
+          id="toggle-tour-routes"
+          class="border border-white/15 bg-obsidian px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-amber-400/60 hover:text-amber-300"
+        >
+          Route Arcs: OFF
         </button>
 
         <div id="globe-region-controls" class="flex flex-wrap items-center gap-1">
@@ -146,6 +153,28 @@
         >
           Clear &times;
         </button>
+      </div>
+
+      <!-- Active 2027 Tour Show Card (shown when a Gold Star is clicked) -->
+      <div
+        id="selected-tour-banner"
+        class="pointer-events-auto absolute top-3 left-3 z-20 hidden max-w-[320px] flex-col gap-1 border border-amber-400/80 bg-obsidian/95 px-3.5 py-2.5 shadow-2xl backdrop-blur"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <span id="selected-tour-meta" class="font-mono-meta text-[10px] font-bold tracking-wider text-amber-300 uppercase">
+            &#9733; Stop #1 • 2027 Tour
+          </span>
+          <button
+            type="button"
+            id="clear-tour-select"
+            class="border border-white/20 px-1.5 py-0.5 font-mono-meta text-[10px] text-ash hover:border-amber-400 hover:text-white"
+          >
+            &times;
+          </button>
+        </div>
+        <div id="selected-tour-title" class="font-display text-lg leading-tight text-white uppercase"></div>
+        <div id="selected-tour-venue" class="text-[11px] text-chalk/90"></div>
+        <div id="selected-tour-reach" class="mt-1 border-t border-white/10 pt-1.5 font-mono-meta text-[10px] text-amber-200"></div>
       </div>
 
       <!-- Zoom Controls (Bottom Right of Canvas) -->
@@ -283,12 +312,13 @@
     geoPath,
     geoGraticule10,
     geoDistance,
+    geoCircle,
     type GeoProjection,
   } from 'd3-geo';
   import { feature, mesh } from 'topojson-client';
   import worldAtlas from 'world-atlas/countries-110m.json';
   import usAtlas from 'us-atlas/states-10m.json';
-  import { COUNTRY_BY_ISONUM, STATE_BY_CODE, STATE_BY_FIPS } from '../lib/geo';
+  import { COUNTRY_BY_ISONUM, STATE_BY_CODE, STATE_BY_FIPS, haversineMiles } from '../lib/geo';
 
   type MapMode = 'globe' | 'flat-world' | 'usa';
   type TrafficFilter = 'all' | 'mobile' | 'desktop' | 'clicks';
@@ -407,6 +437,8 @@
     let trafficFilter: TrafficFilter = 'all';
     let activeTab: GeoTab = 'states';
     let showTourOverlay = true;
+    let showTourRoutes = false;
+    let selectedTourId: string | null = null;
     let autoSpin = true;
     let selectedStateCode: string | null = null;
     let focusedCityKey: string | null = null;
@@ -429,8 +461,27 @@
 
     // Cached screen coordinates for crisp hit-testing
     let renderedCities: Array<{ x: number; y: number; r: number; city: GeoCity }> = [];
-    let renderedTours: Array<{ x: number; y: number; stop: TourStopGeo }> = [];
+    let renderedTours: Array<{ x: number; y: number; stopIndex: number; stop: TourStopGeo }> = [];
     let currentProjection: GeoProjection | null = null;
+
+    function getLocalReach(stop: TourStopGeo, radiusMiles = 100) {
+      if (!geoData?.cities?.length) {
+        return { views: 0, clicks: 0, sessions: 0, cityCount: 0 };
+      }
+      let views = 0;
+      let clicks = 0;
+      let sessions = 0;
+      let cityCount = 0;
+      for (const c of geoData.cities) {
+        if (haversineMiles(stop.lat, stop.lng, c.lat, c.lng) <= radiusMiles) {
+          views += c.views;
+          clicks += c.clicks;
+          sessions += c.sessions;
+          cityCount += 1;
+        }
+      }
+      return { views, clicks, sessions, cityCount };
+    }
 
     const CAMERA_PRESETS: Record<string, [number, number]> = {
       usa: [97, -36],
@@ -851,26 +902,67 @@
     ) {
       if (!geoData) return;
 
-      // 1. Optional 2027 Tour Route dashed polyline + Gold Star Stops
+      // 1. Collect visible 2027 Tour Stops + draw optional smooth curved route arcs + 100-mi radius ring
       if (showTourOverlay && geoData.tourStops?.length) {
-        const pts: Array<[number, number]> = [];
-        for (const stop of geoData.tourStops) {
-          if (!isVisible(stop.lng, stop.lat, stop.country)) continue;
+        geoData.tourStops.forEach((stop, idx) => {
+          if (!isVisible(stop.lng, stop.lat, stop.country)) return;
           const xy = projection([stop.lng, stop.lat]);
           if (xy) {
-            pts.push(xy);
-            renderedTours.push({ x: xy[0], y: xy[1], stop });
+            renderedTours.push({ x: xy[0], y: xy[1], stopIndex: idx + 1, stop });
+          }
+        });
+
+        // Draw 100-mile local fan radius ring around selected 2027 tour stop
+        if (selectedTourId) {
+          const activeTour = renderedTours.find((t) => t.stop.id === selectedTourId);
+          if (activeTour) {
+            const circle = geoCircle()
+              .center([activeTour.stop.lng, activeTour.stop.lat])
+              .radius(100 / 69.05)();
+            const cPath = geoPath(projection, ctx);
+            ctx.save();
+            ctx.beginPath();
+            cPath(circle);
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.14)';
+            ctx.fill();
+            ctx.setLineDash([4, 3]);
+            ctx.strokeStyle = 'rgba(251, 191, 36, 0.85)';
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+            ctx.restore();
           }
         }
 
-        if (pts.length > 1) {
+        // Optional smooth curved flight-style arcs when Route Arcs is toggled ON
+        if (showTourRoutes && renderedTours.length > 1) {
           ctx.save();
-          ctx.beginPath();
-          pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
-          ctx.setLineDash([4, 4]);
-          ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
-          ctx.lineWidth = 1.1;
-          ctx.stroke();
+          for (let i = 0; i < renderedTours.length - 1; i++) {
+            const a = renderedTours[i];
+            const b = renderedTours[i + 1];
+            const mx = (a.x + b.x) / 2;
+            const my = (a.y + b.y) / 2;
+            const dist = Math.hypot(b.x - a.x, b.y - a.y);
+            const lift = Math.min(48, Math.max(12, dist * 0.22));
+            const cx = mx;
+            const cy = my - lift;
+
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.quadraticCurveTo(cx, cy, b.x, b.y);
+            ctx.strokeStyle = 'rgba(245, 158, 11, 0.42)';
+            ctx.lineWidth = 1.25;
+            ctx.stroke();
+
+            // Animated travel bead gliding along each chronological hop
+            const t = (pulsePhase + i * 0.08) % 1;
+            const inv = 1 - t;
+            const bx = inv * inv * a.x + 2 * inv * t * cx + t * t * b.x;
+            const by = inv * inv * a.y + 2 * inv * t * cy + t * t * b.y;
+            ctx.beginPath();
+            ctx.arc(bx, by, 2.2, 0, Math.PI * 2);
+            ctx.fillStyle = '#fde68a';
+            ctx.fill();
+          }
           ctx.restore();
         }
       }
@@ -943,15 +1035,51 @@
         renderedCities.push({ x, y, r: Math.max(r + 4, 9), city });
       });
 
-      // 3. Draw Gold Stars for 2027 Tour Stops on top so they stay clickable
+      // 3. Draw Gold Stars for 2027 Tour Stops on top with dark contrast halo so they pop cleanly
       if (showTourOverlay) {
         for (const t of renderedTours) {
-          drawStar(t.x, t.y, 7.2, 3.2);
-          ctx.fillStyle = '#f59e0b';
+          const isSel = selectedTourId === t.stop.id;
+
+          if (isSel) {
+            const pR = 10 + pulsePhase * 18;
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, pR, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(251, 191, 36, ${(1 - pulsePhase) * 0.9})`;
+            ctx.lineWidth = 1.6;
+            ctx.stroke();
+          }
+
+          // Dark obsidian backing halo so stars pop clearly off bright crimson states
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, isSel ? 10.5 : 8.2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(5, 5, 7, 0.88)';
+          ctx.fill();
+          ctx.strokeStyle = isSel ? '#fde68a' : 'rgba(245, 158, 11, 0.55)';
+          ctx.lineWidth = isSel ? 1.5 : 0.9;
+          ctx.stroke();
+
+          drawStar(t.x, t.y, isSel ? 8.2 : 6.6, isSel ? 3.7 : 3.0);
+          ctx.fillStyle = isSel ? '#fde68a' : '#f59e0b';
           ctx.fill();
           ctx.strokeStyle = '#fffbeb';
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 0.9;
           ctx.stroke();
+
+          // Show chronological stop numbers (#1–#14) when Route Arcs is ON or star is selected
+          if (showTourRoutes || isSel) {
+            ctx.font = '700 9px "Space Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const badgeX = t.x + 11;
+            const badgeY = t.y - 9;
+            ctx.fillStyle = 'rgba(5, 5, 7, 0.92)';
+            ctx.fillRect(badgeX - 8, badgeY - 6, 16, 12);
+            ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+            ctx.lineWidth = 0.8;
+            ctx.strokeRect(badgeX - 8, badgeY - 6, 16, 12);
+            ctx.fillStyle = '#fde68a';
+            ctx.fillText(String(t.stopIndex), badgeX, badgeY + 0.5);
+          }
         }
       }
     }
@@ -977,8 +1105,8 @@
       // 1. Check 2027 Tour Stars first
       if (showTourOverlay) {
         for (const t of renderedTours) {
-          if (Math.hypot(px - t.x, py - t.y) <= 10) {
-            return { kind: 'tour' as const, data: t.stop, x: px, y: py };
+          if (Math.hypot(px - t.x, py - t.y) <= 11) {
+            return { kind: 'tour' as const, data: { ...t.stop, stopIndex: t.stopIndex }, x: px, y: py };
           }
         }
       }
@@ -1063,12 +1191,18 @@
           py
         );
       } else if (hit.kind === 'tour') {
-        const s = hit.data as TourStopGeo;
+        const s = hit.data as TourStopGeo & { stopIndex?: number };
+        const reach = getLocalReach(s, 100);
         showTooltip(
-          `<div class="font-mono-meta text-[10px] font-bold tracking-wider text-amber-300 uppercase">&#9733; 2027 ${esc(s.kind)} Show</div>
+          `<div class="font-mono-meta text-[10px] font-bold tracking-wider text-amber-300 uppercase">&#9733; Stop #${s.stopIndex || ''} • 2027 ${esc(s.kind)}</div>
            <div class="font-display mt-0.5 text-lg leading-tight text-white uppercase">${esc(s.city)}, ${esc(s.region)}</div>
-           <div class="mt-1 text-[11px] text-chalk">${esc(s.venue)}</div>
-           <div class="font-mono-meta mt-0.5 text-[10px] text-ash">${esc(s.date)}</div>`,
+           <div class="mt-0.5 text-[11px] text-chalk">${esc(s.venue)}</div>
+           <div class="font-mono-meta mt-0.5 text-[10px] text-ash">${esc(s.date)}</div>
+           <div class="mt-1.5 grid grid-cols-2 gap-2 border-t border-white/10 pt-1.5 font-mono-meta text-[10px]">
+             <div><span class="text-ash">Fans &le;100 mi</span><div class="font-bold text-amber-300">${reach.views} views</div></div>
+             <div><span class="text-ash">Local Clicks</span><div class="font-bold text-crimson">${reach.clicks} taps</div></div>
+           </div>
+           <div class="mt-1 font-mono-meta text-[9px] text-ash">Click star to lock 100-mi radius ring</div>`,
           px,
           py
         );
@@ -1129,7 +1263,10 @@
       const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
       if (!hit) return;
 
-      if (hit.kind === 'state') {
+      if (hit.kind === 'tour') {
+        selectTourStop(hit.data);
+      } else if (hit.kind === 'state') {
+        selectTourStop(null);
         selectUsState(hit.data.code);
       } else if (hit.kind === 'city') {
         const c = hit.data as GeoCity;
@@ -1140,6 +1277,39 @@
     canvas.addEventListener('pointerleave', () => {
       if (!isDragging) hideTooltip();
     });
+
+    function selectTourStop(stop: (TourStopGeo & { stopIndex?: number }) | null) {
+      const banner = document.getElementById('selected-tour-banner');
+      if (!stop || selectedTourId === stop.id) {
+        selectedTourId = null;
+        banner?.classList.add('hidden');
+        banner?.classList.remove('flex');
+        return;
+      }
+      // Clear state banner if open so banners never overlap
+      if (selectedStateCode) selectUsState(null);
+      selectedTourId = stop.id;
+      const reach = getLocalReach(stop, 100);
+      const metaEl = document.getElementById('selected-tour-meta');
+      const titleEl = document.getElementById('selected-tour-title');
+      const venueEl = document.getElementById('selected-tour-venue');
+      const reachEl = document.getElementById('selected-tour-reach');
+      if (metaEl) metaEl.innerHTML = `&#9733; Stop #${stop.stopIndex || ''} • ${esc(stop.date)} • ${esc(stop.kind)}`;
+      if (titleEl) titleEl.textContent = `${stop.city}, ${stop.region}`;
+      if (venueEl) venueEl.textContent = stop.venue;
+      if (reachEl) {
+        reachEl.textContent =
+          reach.views > 0 || reach.clicks > 0
+            ? `100-mi Local Reach: ${reach.views} views • ${reach.clicks} clicks (${reach.cityCount} ${reach.cityCount === 1 ? 'city' : 'cities'})`
+            : '100-mi Local Reach: 0 visits recorded in this radius yet';
+      }
+      banner?.classList.remove('hidden');
+      banner?.classList.add('flex');
+      if (mapMode === 'globe') {
+        targetRotation = [-stop.lng, -stop.lat];
+        setAutoSpin(false);
+      }
+    }
 
     function selectUsState(code: string | null) {
       selectedStateCode = selectedStateCode === code ? null : code;
@@ -1418,8 +1588,9 @@
 
     document.getElementById('toggle-tour-overlay')?.addEventListener('click', (e) => {
       showTourOverlay = !showTourOverlay;
+      if (!showTourOverlay) selectTourStop(null);
       const btn = e.currentTarget as HTMLButtonElement;
-      btn.innerHTML = showTourOverlay ? '&#9733; 2027 Tour Stops: ON' : '&#9733; 2027 Tour Stops: OFF';
+      btn.innerHTML = showTourOverlay ? '&#9733; 2027 Tour Dates: ON' : '&#9733; 2027 Tour Dates: OFF';
       btn.classList.toggle('border-amber-400/70', showTourOverlay);
       btn.classList.toggle('bg-amber-500/15', showTourOverlay);
       btn.classList.toggle('text-amber-300', showTourOverlay);
@@ -1427,6 +1598,23 @@
       btn.classList.toggle('bg-obsidian', !showTourOverlay);
       btn.classList.toggle('text-ash', !showTourOverlay);
     });
+
+    document.getElementById('toggle-tour-routes')?.addEventListener('click', (e) => {
+      showTourRoutes = !showTourRoutes;
+      if (showTourRoutes && !showTourOverlay) {
+        document.getElementById('toggle-tour-overlay')?.click();
+      }
+      const btn = e.currentTarget as HTMLButtonElement;
+      btn.textContent = showTourRoutes ? 'Route Arcs: ON' : 'Route Arcs: OFF';
+      btn.classList.toggle('border-amber-400/70', showTourRoutes);
+      btn.classList.toggle('bg-amber-500/15', showTourRoutes);
+      btn.classList.toggle('text-amber-300', showTourRoutes);
+      btn.classList.toggle('border-white/15', !showTourRoutes);
+      btn.classList.toggle('bg-obsidian', !showTourRoutes);
+      btn.classList.toggle('text-ash', !showTourRoutes);
+    });
+
+    document.getElementById('clear-tour-select')?.addEventListener('click', () => selectTourStop(null));
 
     document.getElementById('clear-state-filter')?.addEventListener('click', () => selectUsState(null));
 
@@ -1443,6 +1631,7 @@
       flatZoom = 1.0;
       targetRotation = [96, -34];
       selectUsState(null);
+      selectTourStop(null);
       focusedCityKey = null;
     });
 
