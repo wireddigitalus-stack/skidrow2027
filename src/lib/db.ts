@@ -280,34 +280,52 @@ function mapSupabasePost(row: Record<string, any>): ManagedPost {
   };
 }
 
-export async function seedInitialPostsToSupabase(): Promise<ManagedPost[]> {
-  const sb = getSupabase();
-  const rows = NEWS_POSTS.map((p) => ({
-    slug: p.slug,
-    title: p.title,
-    date_label: p.date,
-    iso_date: p.isoDate,
-    read_time: p.readTime || '2 min read',
-    category: p.category,
-    image_url: p.image || '/images/hero-band.jpg',
-    excerpt: p.excerpt || '',
-    body: p.body || [],
-    cta_label: p.ctaLabel || '',
-    cta_url: p.ctaUrl || '',
-    tags: p.tags || [],
-    status: 'published',
-    updated_at: new Date().toISOString(),
-  }));
-  const { data, error } = await sb
-    .from('news_posts')
-    .upsert(rows, { onConflict: 'slug' })
-    .select('*')
-    .order('iso_date', { ascending: false });
-  if (error) {
-    console.error('Supabase auto-seed error:', error.message);
-    return [];
+export async function seedInitialPosts(): Promise<ManagedPost[]> {
+  if (isSupabaseConfigured()) {
+    const sb = getSupabase();
+    const rows = NEWS_POSTS.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      date_label: p.date,
+      iso_date: p.isoDate,
+      read_time: p.readTime || '2 min read',
+      category: p.category,
+      image_url: p.image || '/images/hero-band.jpg',
+      excerpt: p.excerpt || '',
+      body: p.body || [],
+      cta_label: p.ctaLabel || '',
+      cta_url: p.ctaUrl || '',
+      tags: p.tags || [],
+      status: 'published',
+      updated_at: new Date().toISOString(),
+    }));
+    const { data, error } = await sb
+      .from('news_posts')
+      .upsert(rows, { onConflict: 'slug' })
+      .select('*')
+      .order('iso_date', { ascending: false });
+    if (error) {
+      throw new Error(`Supabase seed failed: ${error.message}`);
+    }
+    return (data || []).map(mapSupabasePost);
   }
-  return (data || []).map(mapSupabasePost);
+
+  return withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    for (const p of NEWS_POSTS) {
+      if (!store.posts.some((existing) => existing.slug === p.slug)) {
+        store.posts.push({
+          ...p,
+          id: crypto.randomUUID(),
+          status: 'published',
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
+    store.posts.sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+    await writeLocalStoreUnlocked(store);
+    return store.posts;
+  });
 }
 
 export async function listPosts(includeDrafts = false): Promise<ManagedPost[]> {
@@ -318,6 +336,7 @@ export async function listPosts(includeDrafts = false): Promise<ManagedPost[]> {
     const { data, error } = await query;
     if (error) {
       console.error('Supabase listPosts error:', error.message);
+      if (includeDrafts) throw new Error(`Supabase error: ${error.message}`);
       return NEWS_POSTS.map((p, i) => ({ ...p, id: `fallback-${i}`, status: 'published' }));
     }
     if (!data || data.length === 0) {
@@ -327,8 +346,13 @@ export async function listPosts(includeDrafts = false): Promise<ManagedPost[]> {
         .select('*', { count: 'exact', head: true })
         .eq('action', 'POST_DELETE');
       if (!deleteCount) {
-        const seeded = await seedInitialPostsToSupabase();
-        if (seeded.length > 0) return seeded;
+        try {
+          const seeded = await seedInitialPosts();
+          if (seeded.length > 0) return seeded;
+        } catch (err) {
+          console.error('Auto-seed failed:', err);
+          if (includeDrafts) throw err;
+        }
       }
       return includeDrafts
         ? []

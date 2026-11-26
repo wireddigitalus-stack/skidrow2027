@@ -13,11 +13,21 @@ function unauthorized() {
 
 export const GET: APIRoute = async ({ cookies }) => {
   if (!isAuthenticated(cookies)) return unauthorized();
-  const posts = await listPosts(true);
-  return new Response(JSON.stringify({ posts }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
+  try {
+    const posts = await listPosts(true);
+    return new Response(JSON.stringify({ ok: true, posts }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ ok: false, posts: [], error: err?.message || 'Failed to load posts' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      }
+    );
+  }
 };
 
 export const POST: APIRoute = async ({ request, cookies }) => {

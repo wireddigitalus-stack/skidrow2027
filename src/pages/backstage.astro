@@ -1135,12 +1135,63 @@ const usingSupabase = isSupabaseConfigured();
           }
         });
 
+        let postsLoadError = '';
+
+        async function runSeedPosts() {
+          toast('Loading 20 Skid Row posts into database...');
+          try {
+            const res = await fetch('/api/admin/seed', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: '{}',
+            });
+            const raw = await res.text();
+            let json: any = {};
+            try {
+              json = JSON.parse(raw);
+            } catch {
+              json = { ok: false, error: `HTTP ${res.status}: ${raw.slice(0, 140)}` };
+            }
+            if (res.ok && json.ok) {
+              postsLoadError = '';
+              if (Array.isArray(json.posts)) {
+                allPosts = json.posts;
+                renderPostsList();
+              } else {
+                await loadPosts();
+              }
+              await loadAnalytics();
+              toast(`Loaded ${json.seeded} Skid Row posts!`);
+            } else {
+              postsLoadError = json.error || `Seed failed (HTTP ${res.status})`;
+              renderPostsList();
+              toast(`Error: ${postsLoadError}`);
+            }
+          } catch (err: any) {
+            postsLoadError = err?.message || 'Network error while seeding posts';
+            renderPostsList();
+            toast(`Error: ${postsLoadError}`);
+          }
+        }
+
         // Load & Edit News Posts
         async function loadPosts() {
-          const res = await fetch('/api/admin/posts');
-          if (res.status === 401) return window.location.reload();
-          const data = await res.json();
-          allPosts = data.posts || [];
+          try {
+            const res = await fetch('/api/admin/posts');
+            if (res.status === 401) return window.location.reload();
+            const raw = await res.text();
+            let data: any = {};
+            try {
+              data = JSON.parse(raw);
+            } catch {
+              data = { posts: [], error: `HTTP ${res.status}: ${raw.slice(0, 140)}` };
+            }
+            postsLoadError = data.error || '';
+            allPosts = data.posts || [];
+          } catch (err: any) {
+            postsLoadError = err?.message || 'Could not reach /api/admin/posts';
+            allPosts = [];
+          }
           renderPostsList();
         }
 
@@ -1150,21 +1201,11 @@ const usingSupabase = isSupabaseConfigured();
           const list = document.getElementById('cms-posts-list')!;
           if (filtered.length === 0) {
             list.innerHTML = `<div class="p-6 text-center">
+              ${postsLoadError ? `<p class="mb-3 border border-crimson/60 bg-crimson/15 p-3 font-mono-meta text-xs text-white">${esc(postsLoadError)}</p>` : ''}
               <p class="font-mono-meta text-xs text-ash uppercase">${q ? 'No matching posts found.' : 'No posts in database yet.'}</p>
               ${!q ? '<button type="button" id="inline-seed-posts" class="btn-crimson mt-4 !min-h-10 !px-4 !py-2 text-xs">Load 20 Skid Row Posts</button>' : ''}
             </div>`;
-            document.getElementById('inline-seed-posts')?.addEventListener('click', async () => {
-              toast('Loading 20 Skid Row posts...');
-              const res = await fetch('/api/admin/seed', { method: 'POST' });
-              const json = await res.json();
-              if (res.ok && json.ok) {
-                toast(`Loaded ${json.seeded} posts!`);
-                await loadPosts();
-                await loadAnalytics();
-              } else {
-                toast(json.error || 'Could not seed posts');
-              }
-            });
+            document.getElementById('inline-seed-posts')?.addEventListener('click', runSeedPosts);
             return;
           }
           list.innerHTML = filtered
@@ -1299,18 +1340,7 @@ const usingSupabase = isSupabaseConfigured();
           }
         });
 
-        document.getElementById('btn-seed-posts')?.addEventListener('click', async () => {
-          toast('Seeding 20 Skid Row posts...');
-          const res = await fetch('/api/admin/seed', { method: 'POST' });
-          const json = await res.json();
-          if (res.ok && json.ok) {
-            toast(`Seeded ${json.seeded} posts!`);
-            loadPosts();
-            loadAnalytics();
-          } else {
-            toast(json.error || 'Seed failed');
-          }
-        });
+        document.getElementById('btn-seed-posts')?.addEventListener('click', runSeedPosts);
 
         // Initial load (only when authenticated dashboard DOM is mounted)
         if (document.getElementById('panel-analytics')) {
