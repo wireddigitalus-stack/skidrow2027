@@ -1,0 +1,157 @@
+---
+export const prerender = true;
+import Layout from '../../layouts/Layout.astro';
+import Icons from '../../components/Icons.astro';
+import { DISCOGRAPHY } from '../../data/discography';
+
+const studioCount = DISCOGRAPHY.filter((a) => a.type === 'Studio').length;
+const singleEpCount = DISCOGRAPHY.filter((a) => a.type === 'Single' || a.type === 'EP').length;
+const liveCompCount = DISCOGRAPHY.filter((a) => a.type === 'Live' || a.type === 'Compilation').length;
+---
+
+<Layout
+  title="Music & Discography"
+  description="Complete Skid Row discography from the 1989 debut to Won't Get Fooled Again (2026). Stream albums, read tracklists, credits, and full lyrics."
+>
+  <section class="relative overflow-hidden border-b border-white/10 bg-obsidian pt-10 pb-16 sm:pt-16 sm:pb-20">
+    <div class="crimson-glow pointer-events-none absolute inset-0" />
+    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+        1989 – 2026 Discography
+      </p>
+      <h1 class="font-display mt-1 text-5xl leading-none text-white uppercase sm:text-7xl">
+        Music
+      </h1>
+      <div class="slash-divider mt-4 w-28" />
+      <p class="mt-4 max-w-2xl text-sm text-ash sm:text-base">
+        Tap any release to explore tracklists, studio credits, and lyrics — or stream directly on your favorite platform.
+      </p>
+
+      <!-- Filter Pills -->
+      <div class="no-scrollbar mt-7 flex gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Filter releases">
+        <button
+          type="button"
+          data-filter="all"
+          class="music-filter-btn min-h-11 shrink-0 border border-crimson bg-crimson px-4 font-mono-meta text-xs font-bold tracking-wider text-white uppercase transition-colors"
+        >
+          All ({DISCOGRAPHY.length})
+        </button>
+        <button
+          type="button"
+          data-filter="Studio"
+          class="music-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Studio ({studioCount})
+        </button>
+        <button
+          type="button"
+          data-filter="SingleEP"
+          class="music-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Singles &amp; EPs ({singleEpCount})
+        </button>
+        <button
+          type="button"
+          data-filter="LiveComp"
+          class="music-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Live &amp; Best Of ({liveCompCount})
+        </button>
+      </div>
+
+      <!-- Uniform 2-col Mobile / 3-col Tablet / 4-col Desktop Grid -->
+      <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {DISCOGRAPHY.map((album) => {
+          const group =
+            album.type === 'Studio'
+              ? 'Studio'
+              : album.type === 'Single' || album.type === 'EP'
+                ? 'SingleEP'
+                : 'LiveComp';
+          return (
+            <article
+              class="album-card group flex flex-col border border-white/12 bg-coal transition-all hover:border-crimson/70"
+              data-group={group}
+            >
+              <a href={`/music/${album.slug}`} class="relative block aspect-square overflow-hidden bg-black">
+                <img
+                  src={album.cover}
+                  alt={album.title}
+                  loading="lazy"
+                  decoding="async"
+                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                {album.badge && (
+                  <span class="font-mono-meta absolute top-3 left-3 bg-crimson px-2.5 py-1 text-[10px] font-bold tracking-widest text-white uppercase shadow">
+                    {album.badge}
+                  </span>
+                )}
+                {album.tracks && album.tracks.some((t) => t.lyrics) && (
+                  <span class="font-mono-meta absolute right-3 bottom-3 border border-white/25 bg-black/85 px-2 py-0.5 text-[10px] tracking-wider text-white uppercase">
+                    Lyrics Inside
+                  </span>
+                )}
+              </a>
+
+              <div class="flex flex-1 flex-col p-4">
+                <div class="font-mono-meta flex items-center justify-between text-[11px] tracking-wider uppercase">
+                  <span class="text-crimson">{album.type}</span>
+                  <span class="text-ash">{album.year}</span>
+                </div>
+                <h2 class="font-display mt-1.5 text-2xl leading-tight text-white uppercase transition-colors group-hover:text-crimson">
+                  <a href={`/music/${album.slug}`}>{album.title}</a>
+                </h2>
+                <p class="mt-2 line-clamp-3 flex-1 text-xs leading-relaxed text-ash">
+                  {album.description}
+                </p>
+
+                <div class="mt-4 grid grid-cols-2 gap-2">
+                  <a
+                    href={`/music/${album.slug}`}
+                    class="inline-flex min-h-11 items-center justify-center border border-white/20 bg-obsidian px-3 font-mono-meta text-[11px] font-bold tracking-wider text-white uppercase transition-colors hover:border-crimson hover:text-crimson"
+                  >
+                    Details
+                  </a>
+                  <a
+                    href={album.listenUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex min-h-11 items-center justify-center gap-1 bg-crimson px-3 font-mono-meta text-[11px] font-bold tracking-wider text-white uppercase transition-colors hover:bg-crimson-bright"
+                  >
+                    Listen
+                    <Icons name="external" class="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.music-filter-btn');
+  const cards = document.querySelectorAll<HTMLElement>('.album-card');
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const filter = btn.dataset.filter || 'all';
+      buttons.forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle('bg-crimson', active);
+        b.classList.toggle('border-crimson', active);
+        b.classList.toggle('text-white', active);
+        b.classList.toggle('bg-coal', !active);
+        b.classList.toggle('border-white/20', !active);
+        b.classList.toggle('text-ash', !active);
+      });
+
+      cards.forEach((card) => {
+        const show = filter === 'all' || card.dataset.group === filter;
+        card.classList.toggle('hidden', !show);
+      });
+    });
+  });
+</script>

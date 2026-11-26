@@ -1,0 +1,42 @@
+---
+import Icons from './Icons.astro';
+
+const currentPath = Astro.url.pathname;
+const tabs = [
+  { label: 'Home', href: '/', icon: 'home' },
+  { label: 'Tour', href: '/tour', icon: 'ticket' },
+  { label: 'Music', href: '/music', icon: 'music' },
+  { label: 'News', href: '/news', icon: 'news' },
+  { label: 'Join', href: '/mailing-list', icon: 'mail' },
+];
+
+const isActive = (href: string) =>
+  href === '/' ? currentPath === '/' : currentPath.startsWith(href);
+---
+
+<nav
+  aria-label="Mobile quick navigation"
+  class="fixed right-0 bottom-0 left-0 z-40 border-t border-white/12 bg-obsidian/95 backdrop-blur-lg md:hidden"
+  style="padding-bottom: env(safe-area-inset-bottom);"
+>
+  <div class="grid grid-cols-5">
+    {tabs.map((tab) => {
+      const active = isActive(tab.href);
+      return (
+        <a
+          href={tab.href}
+          class:list={[
+            'relative flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-semibold tracking-wider uppercase transition-colors',
+            active ? 'text-crimson' : 'text-ash hover:text-white',
+          ]}
+        >
+          {active && (
+            <span class="absolute top-0 right-3 left-3 h-0.5 bg-crimson" />
+          )}
+          <Icons name={tab.icon} class="h-5 w-5" />
+          <span>{tab.label}</span>
+        </a>
+      );
+    })}
+  </div>
+</nav>

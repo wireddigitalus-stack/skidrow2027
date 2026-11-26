@@ -1,0 +1,139 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icons from '../../components/Icons.astro';
+import { listPosts } from '../../lib/db';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
+const { slug } = Astro.params;
+const allPosts = await listPosts(false);
+const index = allPosts.findIndex((p) => p.slug === slug);
+
+if (index === -1) {
+  return Astro.redirect('/news');
+}
+
+const post = allPosts[index];
+const prevPost = allPosts[index + 1] ?? null;
+const nextPost = allPosts[index - 1] ?? null;
+const isExternalCta = post.ctaUrl?.startsWith('http');
+---
+
+<Layout title={post.title} description={post.excerpt} image={post.image}>
+  <article class="border-b border-white/10 bg-obsidian pt-8 pb-16 sm:pt-14 sm:pb-20">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6">
+      <a
+        href="/news"
+        class="font-mono-meta inline-flex items-center gap-2 text-xs tracking-widest text-ash uppercase transition-colors hover:text-crimson"
+      >
+        &larr; All News
+      </a>
+
+      <div class="font-mono-meta mt-6 flex flex-wrap items-center gap-3 text-xs tracking-wider uppercase">
+        <span class="bg-crimson px-2.5 py-0.5 font-bold text-white">{post.category}</span>
+        <span class="text-ash">{post.date}</span>
+        <span class="text-white/30">•</span>
+        <span class="text-ash">{post.readTime}</span>
+      </div>
+
+      <h1 class="font-display mt-3 text-4xl leading-tight text-white uppercase sm:text-5xl">
+        {post.title}
+      </h1>
+
+      <div class="mt-6 overflow-hidden border border-white/15 bg-coal">
+        <img
+          src={post.image}
+          alt={post.title}
+          class="w-full object-cover"
+        />
+      </div>
+
+      <div class="mt-8 space-y-5 text-base leading-relaxed text-chalk/90 sm:text-lg">
+        {post.body.map((para) => (
+          <p class="whitespace-pre-line">{para}</p>
+        ))}
+      </div>
+
+      <div class="mt-8 flex flex-wrap items-center gap-3 border-y border-white/10 py-5">
+        {post.ctaUrl && post.ctaLabel && (
+          <a
+            href={post.ctaUrl}
+            target={isExternalCta ? '_blank' : undefined}
+            rel={isExternalCta ? 'noopener noreferrer' : undefined}
+            class="btn-crimson"
+          >
+            {post.ctaLabel}
+            <Icons name={isExternalCta ? 'external' : 'arrow-right'} class="h-4 w-4" />
+          </a>
+        )}
+        <button
+          id="share-article-btn"
+          type="button"
+          data-title={post.title}
+          class="btn-outline"
+        >
+          <Icons name="share" class="h-4 w-4 text-crimson" />
+          Share Dispatch
+        </button>
+      </div>
+
+      <!-- Tags -->
+      <div class="mt-5 flex flex-wrap gap-2">
+        {post.tags.map((tag) => (
+          <span class="font-mono-meta border border-white/15 bg-coal px-2.5 py-1 text-[11px] text-ash uppercase">
+            #{tag}
+          </span>
+        ))}
+      </div>
+
+      <!-- Prev / Next Navigation -->
+      <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {nextPost ? (
+          <a
+            href={`/news/${nextPost.slug}`}
+            class="border border-white/12 bg-coal p-4 transition-colors hover:border-crimson"
+          >
+            <span class="font-mono-meta text-[10px] tracking-widest text-crimson uppercase">
+              &larr; Newer
+            </span>
+            <p class="font-display mt-1 line-clamp-2 text-lg text-white uppercase">
+              {nextPost.title}
+            </p>
+          </a>
+        ) : <div />}
+
+        {prevPost && (
+          <a
+            href={`/news/${prevPost.slug}`}
+            class="border border-white/12 bg-coal p-4 text-left transition-colors hover:border-crimson sm:text-right"
+          >
+            <span class="font-mono-meta text-[10px] tracking-widest text-crimson uppercase">
+              Older &rarr;
+            </span>
+            <p class="font-display mt-1 line-clamp-2 text-lg text-white uppercase">
+              {prevPost.title}
+            </p>
+          </a>
+        )}
+      </div>
+    </div>
+  </article>
+</Layout>
+
+<script>
+  const shareBtn = document.getElementById('share-article-btn');
+  shareBtn?.addEventListener('click', async () => {
+    const title = shareBtn.getAttribute('data-title') || document.title;
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      shareBtn.textContent = 'Link Copied!';
+    } catch {}
+  });
+</script>

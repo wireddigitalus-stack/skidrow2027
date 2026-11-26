@@ -1,0 +1,101 @@
+---
+// Lightweight (<1.5KB) cookie-less first-party telemetry beacon
+---
+
+<script is:inline>
+  (function () {
+    if (window.location.pathname.startsWith('/backstage')) return;
+    if (navigator.doNotTrack === '1') return;
+
+    function getSessionId() {
+      try {
+        var existing = sessionStorage.getItem('sr_sid');
+        if (existing) return existing;
+        var sid = 's_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        sessionStorage.setItem('sr_sid', sid);
+        return sid;
+      } catch (e) {
+        return 's_anon';
+      }
+    }
+
+    function getDevice() {
+      var w = window.innerWidth || 1024;
+      if (w < 768) return 'mobile';
+      if (w < 1024) return 'tablet';
+      return 'desktop';
+    }
+
+    var params = new URLSearchParams(window.location.search);
+    var utmSource = params.get('utm_source') || '';
+    var sid = getSessionId();
+
+    function send(payload) {
+      var data = JSON.stringify(
+        Object.assign(
+          {
+            sessionId: sid,
+            path: window.location.pathname,
+            referrer: document.referrer || '',
+            utmSource: utmSource,
+            deviceType: getDevice(),
+          },
+          payload
+        )
+      );
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/telemetry', data);
+      } else {
+        fetch('/api/telemetry', {
+          method: 'POST',
+          body: data,
+          headers: { 'Content-Type': 'application/json' },
+          keepalive: true,
+        }).catch(function () {});
+      }
+    }
+
+    // Track initial pageview
+    send({ eventType: 'pageview' });
+
+    // Track outbound clicks (tickets, store, streaming, socials) & video plays
+    document.addEventListener(
+      'click',
+      function (e) {
+        var target = e.target;
+        if (!target || !target.closest) return;
+
+        var ytBtn = target.closest('.yt-play-btn');
+        if (ytBtn) {
+          var facade = ytBtn.closest('.yt-facade');
+          send({
+            eventType: 'video_play',
+            targetLabel: 'Video: ' + (facade ? facade.getAttribute('data-video-title') : 'YouTube'),
+            targetUrl: facade ? facade.getAttribute('data-video-id') || '' : '',
+          });
+          return;
+        }
+
+        var link = target.closest('a[href]');
+        if (!link) return;
+        var href = link.getAttribute('href') || '';
+        var isExternal = href.startsWith('http') && !href.startsWith(window.location.origin);
+        var trackLabel = link.getAttribute('data-track');
+
+        if (isExternal || trackLabel) {
+          var label =
+            trackLabel ||
+            link.getAttribute('aria-label') ||
+            (link.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80) ||
+            href;
+          send({
+            eventType: 'click',
+            targetLabel: label,
+            targetUrl: href,
+          });
+        }
+      },
+      { passive: true }
+    );
+  })();
+</script>

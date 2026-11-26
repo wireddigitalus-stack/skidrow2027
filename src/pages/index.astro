@@ -1,0 +1,346 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Marquee from '../components/Marquee.astro';
+import YouTubeFacade from '../components/YouTubeFacade.astro';
+import Icons from '../components/Icons.astro';
+import { TOUR_DATES_2027 } from '../data/tour';
+import { DISCOGRAPHY } from '../data/discography';
+import { listPosts } from '../lib/db';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
+const upcomingShows = TOUR_DATES_2027.slice(0, 6);
+const NEWS_POSTS = await listPosts(false);
+const latestNews = NEWS_POSTS.slice(0, 3);
+const featuredAlbums = DISCOGRAPHY.slice(0, 6);
+const latestSingle = DISCOGRAPHY[0];
+---
+
+<Layout title="Skid Row">
+  <!-- HERO: Mobile-First Band Showcase With Full Headroom -->
+  <section class="relative isolate overflow-hidden bg-obsidian">
+    <!-- Upper Band Photo Stage (matches 1.67:1 photo ratio on mobile so all 5 band members stay fully visible) -->
+    <div class="relative aspect-[16/10] w-full overflow-hidden bg-obsidian sm:aspect-auto sm:h-[48dvh] sm:min-h-[390px] lg:h-[58dvh] lg:min-h-[470px] lg:max-h-[620px]">
+      <img
+        src="/images/hero-band.jpg"
+        alt="Skid Row — Justin Sargent, Rachel Bolan, Snake Sabo, Scotti Hill, and Rob Hammersmith"
+        fetchpriority="high"
+        decoding="async"
+        class="h-full w-full object-cover object-[50%_6%] brightness-[0.95] contrast-[1.05]"
+      />
+      <!-- Tight Low Bottom Seam Fade (keeps 72%+ of the band photo crisp and unobstructed) -->
+      <div
+        class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(5,5,5,0.16)_0%,transparent_14%,transparent_74%,rgba(5,5,5,0.62)_90%,#050505_100%)]"
+      />
+      <div
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(226,28,33,0.16)_0%,transparent_60%)]"
+      />
+      <div class="rock-grain pointer-events-none absolute inset-0 opacity-25" />
+    </div>
+
+    <!-- Lower Hero Copy Stage (dropped off the band photo so faces & lineup stay wide open) -->
+    <div class="relative z-10 -mt-5 mx-auto w-full max-w-7xl px-4 pb-10 sm:-mt-8 sm:px-6 sm:pb-12 lg:-mt-10 lg:px-8 lg:pb-14">
+      <div class="max-w-3xl">
+        <div>
+          <img
+            src="/images/skidrow-logo.avif"
+            alt="Skid Row"
+            width="460"
+            height="136"
+            class="h-14 w-auto drop-shadow-[0_10px_28px_rgba(226,28,33,0.5)] sm:h-20 lg:h-24"
+          />
+        </div>
+
+        <div class="mt-3">
+          <div class="dymo-label max-w-full">
+            <span class="dymo-text text-[9.5px] sm:text-xs">
+              40 YEARS OF REBELLION • 2027 TOUR ON SALE
+            </span>
+          </div>
+        </div>
+
+        <h1 class="font-display mt-4 text-4xl leading-[0.95] tracking-wide text-white uppercase sm:text-5xl lg:text-6xl">
+          Back on Stage in <span class="text-crimson">2027</span>
+        </h1>
+        <p class="mt-2.5 max-w-xl text-sm leading-relaxed text-chalk/85 sm:text-base lg:text-lg">
+          New frontman Justin Sargent. New single <strong class="text-white">"Won't Get Fooled Again"</strong> out now. Fourteen North American concerts &amp; festival dates on sale.
+        </p>
+
+        <!-- Thumb-Friendly Dual Primary CTAs -->
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <a href="/tour" class="btn-crimson w-full text-base sm:w-auto sm:px-7">
+            <Icons name="ticket" class="h-5 w-5" />
+            Get 2027 Tickets
+          </a>
+          <a
+            href={latestSingle.listenUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-outline w-full text-base sm:w-auto sm:px-7"
+          >
+            <Icons name="play" class="h-5 w-5 text-crimson" />
+            Stream New Single
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KINETIC MARQUEE TICKER -->
+  <Marquee />
+
+  <!-- UPCOMING 2027 TOUR DATES (Native, Fast, Zero-Iframe) -->
+  <section class="relative border-b border-white/10 bg-obsidian py-12 sm:py-16 lg:py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+            Live &amp; Loud
+          </p>
+          <h2 class="font-display mt-1 text-4xl leading-none text-white uppercase sm:text-6xl">
+            2027 Show Dates
+          </h2>
+          <div class="slash-divider mt-3 w-24" />
+        </div>
+        <a
+          href="/tour"
+          class="font-mono-meta inline-flex items-center gap-2 text-xs font-bold tracking-widest text-crimson uppercase transition-colors hover:text-white"
+        >
+          View All {TOUR_DATES_2027.length} Shows
+          <Icons name="arrow-right" class="h-4 w-4" />
+        </a>
+      </div>
+
+      <div class="mt-8 divide-y divide-white/10 border border-white/12 bg-coal">
+        {upcomingShows.map((show) => (
+          <div class="group flex flex-col gap-3 p-4 transition-colors hover:bg-asphalt sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
+            <div class="flex items-center gap-4">
+              <div class="flex h-14 w-16 shrink-0 flex-col items-center justify-center border border-crimson/50 bg-obsidian text-center">
+                <span class="font-mono-meta text-[10px] font-bold tracking-widest text-crimson uppercase">
+                  {show.month}
+                </span>
+                <span class="font-display text-2xl leading-none text-white">
+                  {show.day}
+                </span>
+              </div>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="font-display text-xl tracking-wide text-white uppercase sm:text-2xl">
+                    {show.city}, {show.region}
+                  </h3>
+                  {show.kind === 'Festival' && (
+                    <span class="font-mono-meta bg-crimson/20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-crimson uppercase">
+                      Festival
+                    </span>
+                  )}
+                </div>
+                <p class="mt-0.5 truncate text-sm text-ash">
+                  {show.venue} <span class="text-white/30">•</span>{' '}
+                  <span class="font-mono-meta text-xs">{show.weekday} {show.year}</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:shrink-0">
+              <a
+                href={show.ticketUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-crimson !min-h-11 w-full !px-5 !py-2 text-sm sm:w-auto"
+              >
+                <Icons name="ticket" class="h-4 w-4" />
+                {show.status}
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div class="mt-6 flex flex-col items-center justify-between gap-4 border border-dashed border-white/15 bg-coal/50 p-4 text-center sm:flex-row sm:px-6 sm:text-left">
+        <p class="text-sm text-ash">
+          Plus <strong class="text-white">Welcome to Rockville</strong> (May 9), <strong class="text-white">Sonic Temple</strong> (May 14), <strong class="text-white">Niagara Falls</strong> (May 29) &amp; more dates announcing soon.
+        </p>
+        <a href="/tour" class="btn-outline w-full shrink-0 sm:w-auto">
+          All {TOUR_DATES_2027.length} Dates
+          <Icons name="arrow-right" class="h-4 w-4" />
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- LATEST SINGLE & OFFICIAL VIDEO SPOTLIGHT -->
+  <section class="relative overflow-hidden border-b border-white/10 bg-coal py-12 sm:py-16 lg:py-20">
+    <div class="crimson-glow pointer-events-none absolute inset-0" />
+    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
+        <div class="lg:col-span-5">
+          <span class="font-mono-meta inline-block bg-crimson px-2.5 py-1 text-[11px] font-bold tracking-[0.2em] text-white uppercase">
+            New Era • Single &amp; Video Out Now
+          </span>
+          <h2 class="font-display mt-3 text-4xl leading-none text-white uppercase sm:text-5xl lg:text-6xl">
+            Won't Get Fooled Again
+          </h2>
+          <p class="mt-4 text-sm leading-relaxed text-chalk/85 sm:text-base">
+            Produced by Grammy-winner <strong class="text-white">Nick Raskulinecz</strong> and introducing powerhouse vocalist <strong class="text-white">Justin Sargent</strong> — Skid Row's blistering take on The Who's immortal anthem kicks off four decades of rebellion.
+          </p>
+
+          <div class="mt-5 flex items-center gap-4 border border-white/10 bg-obsidian/80 p-3">
+            <img
+              src={latestSingle.cover}
+              alt="Won't Get Fooled Again single cover"
+              width="72"
+              height="72"
+              loading="lazy"
+              class="h-16 w-16 shrink-0 border border-white/15 object-cover"
+            />
+            <div class="min-w-0">
+              <p class="font-display text-lg text-white uppercase">
+                Limited Autographed 7" Vinyl
+              </p>
+              <p class="text-xs text-ash">
+                Streaming everywhere + collector's poster edition
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+            <a
+              href={latestSingle.listenUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-crimson w-full sm:w-auto"
+            >
+              Stream &amp; Order
+              <Icons name="external" class="h-4 w-4" />
+            </a>
+            <a href="/music/wont-get-fooled-again" class="btn-outline w-full sm:w-auto">
+              Credits &amp; Lyrics
+            </a>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7">
+          <YouTubeFacade
+            videoId="psns6haPLVY"
+            title="Skid Row - Won't Get Fooled Again (Official Music Video)"
+            subtitle="Watch Official Music Video"
+            thumbnail="/images/bio-wgfa.jpg"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LATEST NEWS (Mobile Horizontal Swipe Rail -> Desktop 3-Col Grid) -->
+  <section class="border-b border-white/10 bg-obsidian py-12 sm:py-16 lg:py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+            Dispatches
+          </p>
+          <h2 class="font-display mt-1 text-4xl leading-none text-white uppercase sm:text-6xl">
+            Latest News
+          </h2>
+          <div class="slash-divider mt-3 w-24" />
+        </div>
+        <a
+          href="/news"
+          class="font-mono-meta inline-flex items-center gap-2 text-xs font-bold tracking-widest text-crimson uppercase transition-colors hover:text-white"
+        >
+          All {NEWS_POSTS.length} Articles
+          <Icons name="arrow-right" class="h-4 w-4" />
+        </a>
+      </div>
+
+      <div class="no-scrollbar -mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
+        {latestNews.map((post) => (
+          <article class="group flex w-[84vw] max-w-[340px] shrink-0 snap-start flex-col border border-white/12 bg-coal transition-colors hover:border-crimson/70 md:w-auto md:max-w-none">
+            <a href={`/news/${post.slug}`} class="block overflow-hidden bg-black">
+              <img
+                src={post.image}
+                alt={post.title}
+                loading="lazy"
+                decoding="async"
+                class="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </a>
+            <div class="flex flex-1 flex-col p-5">
+              <div class="font-mono-meta flex items-center justify-between text-[11px] tracking-wider uppercase">
+                <span class="text-crimson">{post.category}</span>
+                <span class="text-ash">{post.date}</span>
+              </div>
+              <h3 class="font-display mt-2 text-2xl leading-tight text-white uppercase transition-colors group-hover:text-crimson">
+                <a href={`/news/${post.slug}`}>{post.title}</a>
+              </h3>
+              <p class="mt-2.5 line-clamp-3 flex-1 text-sm leading-relaxed text-ash">
+                {post.excerpt}
+              </p>
+              <a
+                href={`/news/${post.slug}`}
+                class="font-mono-meta mt-4 inline-flex items-center gap-1.5 text-xs font-bold tracking-wider text-white uppercase transition-colors group-hover:text-crimson"
+              >
+                Read Dispatch
+                <Icons name="arrow-right" class="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- DISCOGRAPHY TEASER SHELF -->
+  <section class="bg-coal py-12 sm:py-16 lg:py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+            1989 – 2026 Catalog
+          </p>
+          <h2 class="font-display mt-1 text-4xl leading-none text-white uppercase sm:text-6xl">
+            The Music
+          </h2>
+          <div class="slash-divider mt-3 w-24" />
+        </div>
+        <a
+          href="/music"
+          class="font-mono-meta inline-flex items-center gap-2 text-xs font-bold tracking-widest text-crimson uppercase transition-colors hover:text-white"
+        >
+          Full Discography ({DISCOGRAPHY.length})
+          <Icons name="arrow-right" class="h-4 w-4" />
+        </a>
+      </div>
+
+      <div class="no-scrollbar -mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-6">
+        {featuredAlbums.map((album) => (
+          <a
+            href={`/music/${album.slug}`}
+            class="group flex w-44 shrink-0 snap-start flex-col border border-white/10 bg-obsidian p-2.5 transition-all hover:border-crimson sm:w-auto"
+          >
+            <div class="relative aspect-square overflow-hidden bg-black">
+              <img
+                src={album.cover}
+                alt={album.title}
+                loading="lazy"
+                decoding="async"
+                class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              {album.badge && (
+                <span class="font-mono-meta absolute top-2 left-2 bg-crimson px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase">
+                  {album.badge}
+                </span>
+              )}
+            </div>
+            <p class="font-mono-meta mt-2.5 text-[10px] tracking-wider text-crimson uppercase">
+              {album.year} • {album.type}
+            </p>
+            <h3 class="font-display mt-0.5 line-clamp-2 text-base leading-snug text-white uppercase group-hover:text-crimson">
+              {album.title}
+            </h3>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</Layout>

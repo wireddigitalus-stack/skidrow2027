@@ -1,0 +1,65 @@
+---
+import Icons from './Icons.astro';
+
+interface Props {
+  videoId: string;
+  title: string;
+  subtitle?: string;
+  thumbnail?: string;
+}
+
+const { videoId, title, subtitle, thumbnail } = Astro.props;
+const posterUrl =
+  thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+---
+
+<div
+  class="yt-facade group relative aspect-video w-full overflow-hidden border border-white/15 bg-coal"
+  data-video-id={videoId}
+  data-video-title={title}
+>
+  <img
+    src={posterUrl}
+    alt={title}
+    loading="lazy"
+    decoding="async"
+    class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+  />
+  <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+  <button
+    type="button"
+    aria-label={`Play ${title}`}
+    class="yt-play-btn absolute inset-0 flex flex-col items-center justify-center gap-3 text-white focus:outline-none"
+  >
+    <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/90 bg-crimson/95 shadow-[0_0_30px_rgba(226,28,33,0.65)] transition-transform duration-200 group-hover:scale-110 sm:h-20 sm:w-20">
+      <Icons name="play" class="ml-1 h-7 w-7 text-white sm:h-9 sm:w-9" />
+    </span>
+    {subtitle && (
+      <span class="font-mono-meta bg-black/75 px-3 py-1 text-[11px] tracking-widest text-chalk uppercase">
+        {subtitle}
+      </span>
+    )}
+  </button>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.yt-facade').forEach((el) => {
+    if (el.dataset.bound) return;
+    el.dataset.bound = 'true';
+    const btn = el.querySelector('.yt-play-btn');
+    btn?.addEventListener('click', () => {
+      const id = el.dataset.videoId;
+      const title = el.dataset.videoTitle || 'Skid Row Video';
+      if (!id) return;
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+      iframe.title = title;
+      iframe.allow =
+        'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+      iframe.className = 'absolute inset-0 h-full w-full border-0';
+      el.innerHTML = '';
+      el.appendChild(iframe);
+    });
+  });
+</script>

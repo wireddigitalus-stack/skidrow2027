@@ -1,0 +1,19 @@
+{
+  "name": "skidrow-site-2027",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev --host 127.0.0.1 --port 4321",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --host 127.0.0.1 --port 4321",
+    "astro": "ASTRO_TELEMETRY_DISABLED=1 astro"
+  },
+  "dependencies": {
+    "@astrojs/vercel": "^8.2.11",
+    "@supabase/supabase-js": "^2.109.0",
+    "@tailwindcss/vite": "^4.1.4",
+    "astro": "^5.7.13",
+    "tailwindcss": "^4.1.4"
+  }
+}

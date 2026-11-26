@@ -1,0 +1,251 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+import Icons from '../components/Icons.astro';
+import { TOUR_DATES_2027 } from '../data/tour';
+import { SITE } from '../data/site';
+
+const totalShows = TOUR_DATES_2027.length;
+const headlineCount = TOUR_DATES_2027.filter((d) => d.kind === 'Headline').length;
+const festivalCount = TOUR_DATES_2027.filter((d) => d.kind === 'Festival').length;
+const canadaCount = TOUR_DATES_2027.filter((d) => d.country === 'CA').length;
+---
+
+<Layout
+  title="2027 Tour Dates"
+  description="Official Skid Row 2027 North American tour dates, festival appearances (Welcome to Rockville, Sonic Temple), and ticket links."
+>
+  <section class="relative overflow-hidden border-b border-white/10 bg-obsidian pt-10 pb-14 sm:pt-16 sm:pb-20">
+    <!-- Subtle Skid Row Shield Watermark -->
+    <img
+      src="/images/skidrow-shield.avif"
+      alt=""
+      aria-hidden="true"
+      class="pointer-events-none absolute -top-8 right-0 h-64 w-64 opacity-[0.08] sm:right-8 sm:h-96 sm:w-96"
+    />
+    <div class="crimson-glow pointer-events-none absolute inset-0" />
+
+    <div class="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+        <div>
+          <span class="font-mono-meta inline-flex items-center gap-2 border border-crimson/60 bg-crimson/15 px-3 py-1 text-[11px] font-bold tracking-[0.22em] text-crimson uppercase">
+            <span class="h-2 w-2 animate-pulse rounded-full bg-crimson" />
+            On Sale Now • More Dates TBA
+          </span>
+          <h1 class="font-display mt-3 text-5xl leading-none text-white uppercase sm:text-7xl">
+            2027 Tour Dates
+          </h1>
+          <div class="slash-divider mt-4 w-28" />
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <a
+            href={SITE.bandsintownUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-outline w-full sm:w-auto"
+          >
+            <Icons name="bandsintown" class="h-4 w-4 text-crimson" />
+            Track on Bandsintown
+          </a>
+        </div>
+      </div>
+
+      <!-- Filter Pills -->
+      <div
+        class="no-scrollbar mt-8 flex gap-2 overflow-x-auto pb-2"
+        role="tablist"
+        aria-label="Filter tour dates"
+      >
+        <button
+          type="button"
+          data-filter="all"
+          class="tour-filter-btn min-h-11 shrink-0 border border-crimson bg-crimson px-4 font-mono-meta text-xs font-bold tracking-wider text-white uppercase transition-colors"
+        >
+          All Shows ({totalShows})
+        </button>
+        <button
+          type="button"
+          data-filter="Headline"
+          class="tour-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Headline ({headlineCount})
+        </button>
+        <button
+          type="button"
+          data-filter="Festival"
+          class="tour-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Festivals ({festivalCount})
+        </button>
+        <button
+          type="button"
+          data-filter="CA"
+          class="tour-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Canada ({canadaCount})
+        </button>
+      </div>
+
+      <!-- Native Tour List (Always Fast, Zero Broken Iframe) -->
+      <div
+        id="tour-list"
+        class="mt-6 divide-y divide-white/10 border border-white/15 bg-coal"
+      >
+        {TOUR_DATES_2027.map((show) => (
+          <article
+            class="tour-row flex flex-col gap-4 p-4 transition-colors hover:bg-asphalt sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5"
+            data-kind={show.kind}
+            data-country={show.country}
+          >
+            <div class="flex items-center gap-4">
+              <div class="flex h-16 w-16 shrink-0 flex-col items-center justify-center border border-crimson/60 bg-obsidian text-center">
+                <span class="font-mono-meta text-[10px] font-bold tracking-widest text-crimson uppercase">
+                  {show.month}
+                </span>
+                <span class="font-display text-2xl leading-none text-white">
+                  {show.day}
+                </span>
+                <span class="font-mono-meta text-[9px] text-ash">{show.year}</span>
+              </div>
+
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="font-display text-2xl tracking-wide text-white uppercase">
+                    {show.city}, {show.region}
+                  </h2>
+                  {show.kind === 'Festival' && (
+                    <span class="font-mono-meta bg-crimson px-2 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase">
+                      Festival
+                    </span>
+                  )}
+                  {show.country === 'CA' && (
+                    <span class="font-mono-meta border border-white/20 px-2 py-0.5 text-[10px] tracking-wider text-ash uppercase">
+                      Canada
+                    </span>
+                  )}
+                </div>
+                <p class="mt-0.5 text-sm text-chalk/80">
+                  {show.venue}
+                </p>
+                <p class="font-mono-meta mt-0.5 text-[11px] text-ash uppercase">
+                  {show.weekday}, {show.month} {show.day}, {show.year}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2.5 sm:shrink-0">
+              <button
+                type="button"
+                class="ics-btn inline-flex min-h-11 items-center justify-center gap-1.5 border border-white/20 bg-obsidian px-3.5 font-mono-meta text-xs text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+                data-title={`Skid Row Live — ${show.venue}`}
+                data-location={`${show.venue}, ${show.city}, ${show.region}`}
+                data-date={show.isoDate}
+                title="Add to Calendar (.ics)"
+              >
+                <Icons name="calendar" class="h-4 w-4" />
+                <span class="hidden sm:inline">Save</span>
+              </button>
+              <a
+                href={show.ticketUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-crimson !min-h-11 flex-1 !px-5 !py-2 text-sm sm:flex-initial"
+              >
+                <Icons name="ticket" class="h-4 w-4" />
+                {show.status}
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <!-- Request a Show Banner -->
+      <div class="mt-8 flex flex-col items-center justify-between gap-4 border border-crimson/40 bg-gradient-to-r from-crimson/15 via-coal to-coal p-6 text-center sm:flex-row sm:text-left">
+        <div>
+          <h3 class="font-display text-2xl text-white uppercase">
+            Don't See Your City Yet?
+          </h3>
+          <p class="mt-1 text-sm text-ash">
+            More 2027 concerts are being announced soon. Request a Skid Row stop in your city on Bandsintown or join the mailing list for pre-sale alerts.
+          </p>
+        </div>
+        <div class="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row">
+          <a href="/mailing-list" class="btn-crimson">
+            Get Pre-Sale Alerts
+          </a>
+          <a
+            href={SITE.bandsintownUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-outline"
+          >
+            Request City
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.tour-filter-btn');
+  const rows = document.querySelectorAll<HTMLElement>('.tour-row');
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const filter = btn.dataset.filter || 'all';
+      buttons.forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle('bg-crimson', active);
+        b.classList.toggle('border-crimson', active);
+        b.classList.toggle('text-white', active);
+        b.classList.toggle('bg-coal', !active);
+        b.classList.toggle('border-white/20', !active);
+        b.classList.toggle('text-ash', !active);
+      });
+
+      rows.forEach((row) => {
+        const kind = row.dataset.kind;
+        const country = row.dataset.country;
+        const show =
+          filter === 'all' ||
+          kind === filter ||
+          country === filter;
+        row.classList.toggle('hidden', !show);
+      });
+    });
+  });
+
+  // One-tap .ics calendar export for fans
+  document.querySelectorAll<HTMLButtonElement>('.ics-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const title = btn.dataset.title || 'Skid Row Concert';
+      const location = btn.dataset.location || '';
+      const iso = (btn.dataset.date || '2027-03-05').replace(/-/g, '');
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Skid Row//Tour 2027//EN',
+        'BEGIN:VEVENT',
+        `DTSTART;VALUE=DATE:${iso}`,
+        `DTEND;VALUE=DATE:${iso}`,
+        `SUMMARY:${title}`,
+        `LOCATION:${location}`,
+        'DESCRIPTION:Official Skid Row 2027 Concert — https://www.skidrow.com/tour',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
+
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `skid-row-${iso}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  });
+</script>

@@ -1,0 +1,45 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+import { SITE } from '../data/site';
+---
+
+<Layout
+  title="Legal, Privacy & Credits"
+  description="Legal notice, privacy policy, contact details, and site credits for Skid Row Inc."
+>
+  <section class="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+    <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+      Official Notice
+    </p>
+    <h1 class="font-display mt-1 text-5xl text-white uppercase sm:text-6xl">
+      Legal &amp; Privacy Policy
+    </h1>
+    <div class="slash-divider mt-4 w-24" />
+
+    <div class="mt-8 space-y-8 text-sm leading-relaxed text-chalk/85 sm:text-base">
+      <div class="border border-white/10 bg-coal p-6">
+        <h2 class="font-display text-2xl text-white uppercase">Copyright &amp; Trademarks</h2>
+        <p class="mt-2">
+          &copy; 2026&ndash;2027 Skid Row Inc. All Rights Reserved. All music, lyrics, album artwork, logos, photography, and trademarks appearing on this site are the property of Skid Row Inc. or their respective copyright holders and may not be reproduced without written permission.
+        </p>
+      </div>
+
+      <div class="border border-white/10 bg-coal p-6">
+        <h2 class="font-display text-2xl text-white uppercase">Privacy &amp; Mailing List Data</h2>
+        <p class="mt-2">
+          When you opt in to the Skid Row Mailing List, your contact information is used solely to deliver official band news, 2027 tour pre-sale notifications, and music release updates. We never sell fan contact information. You may unsubscribe at any time via any official newsletter email or by contacting management.
+        </p>
+      </div>
+
+      <div id="credits" class="scroll-mt-24 border border-white/10 bg-coal p-6">
+        <h2 class="font-display text-2xl text-white uppercase">Credits &amp; Contact</h2>
+        <ul class="mt-3 space-y-2 text-ash">
+          <li><strong class="text-white">Press Photography:</strong> Carl Timpone &amp; official Skid Row archives</li>
+          <li><strong class="text-white">Management / Inquiries:</strong> <a href={`mailto:${SITE.contactEmail}`} class="text-crimson underline">{SITE.contactEmail}</a></li>
+          <li><strong class="text-white">Official Domain:</strong> <a href={SITE.url} class="text-white underline">www.skidrow.com</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</Layout>

@@ -1,0 +1,66 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+import MailingListForm from '../components/MailingListForm.astro';
+import Icons from '../components/Icons.astro';
+import { SITE } from '../data/site';
+---
+
+<Layout
+  title="Mailing List"
+  description="Join the official Skid Row Mailing List for 2027 tour pre-sale passwords, new music drops, and exclusive fan alerts."
+  hideFooterMailingList
+>
+  <section class="relative overflow-hidden bg-obsidian pt-10 pb-8 sm:pt-16">
+    <div class="crimson-glow pointer-events-none absolute inset-0" />
+    <div class="relative mx-auto max-w-4xl px-4 text-center sm:px-6">
+      <span class="font-mono-meta inline-block border border-crimson/50 bg-crimson/15 px-3 py-1 text-xs tracking-[0.22em] text-crimson uppercase">
+        VIP Pre-Sale &amp; Tour Alerts
+      </span>
+      <h1 class="font-display mt-3 text-5xl leading-none text-white uppercase sm:text-7xl">
+        First in Line for 2027
+      </h1>
+      <p class="mx-auto mt-4 max-w-2xl text-base text-ash sm:text-lg">
+        Get instant access to 2027 concert pre-sale codes, newly added tour stops, vinyl drops, and official Skid Row dispatches straight from the band.
+      </p>
+
+      <div class="mt-8 grid grid-cols-1 gap-3 text-left sm:grid-cols-3">
+        <div class="border border-white/10 bg-coal p-4">
+          <span class="font-mono-meta text-xs text-crimson uppercase">01 / Pre-Sales</span>
+          <h2 class="font-display mt-1 text-xl text-white uppercase">Early Ticket Codes</h2>
+          <p class="mt-1 text-xs text-ash">Beat the general public on newly announced 2027 dates.</p>
+        </div>
+        <div class="border border-white/10 bg-coal p-4">
+          <span class="font-mono-meta text-xs text-crimson uppercase">02 / Releases</span>
+          <h2 class="font-display mt-1 text-xl text-white uppercase">Music &amp; Vinyl Drops</h2>
+          <p class="mt-1 text-xs text-ash">Limited Record Store Day pressings &amp; new studio tracks.</p>
+        </div>
+        <div class="border border-white/10 bg-coal p-4">
+          <span class="font-mono-meta text-xs text-crimson uppercase">03 / Direct</span>
+          <h2 class="font-display mt-1 text-xl text-white uppercase">Zero Spam</h2>
+          <p class="mt-1 text-xs text-ash">Only official Skid Row tour &amp; band announcements.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <MailingListForm />
+
+  <section class="border-b border-white/10 bg-coal py-10">
+    <div class="mx-auto flex max-w-4xl flex-col items-center justify-between gap-4 px-4 text-center sm:flex-row sm:px-6 sm:text-left">
+      <div>
+        <h2 class="font-display text-2xl text-white uppercase">Want Instant Tour Notifications?</h2>
+        <p class="text-sm text-ash">Track Skid Row on Bandsintown to get pinged when a show is announced near your city.</p>
+      </div>
+      <a
+        href={SITE.bandsintownUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-outline shrink-0"
+      >
+        <Icons name="bandsintown" class="h-4 w-4 text-crimson" />
+        Track on Bandsintown
+      </a>
+    </div>
+  </section>
+</Layout>

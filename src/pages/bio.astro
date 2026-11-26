@@ -1,0 +1,146 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+import Icons from '../components/Icons.astro';
+import {
+  BIO_LEAD,
+  BIO_PARAGRAPHS,
+  BAND_MEMBERS,
+  TIMELINE,
+  ARCHIVE_PHOTOS,
+} from '../data/bio';
+---
+
+<Layout
+  title="Bio"
+  description="The first rebellion started in 1986. Forty years later, Skid Row — Rachel Bolan, Snake Sabo, Scotti Hill, Rob Hammersmith, and Justin Sargent — is still bringing the fire."
+>
+  <section class="relative overflow-hidden border-b border-white/10 bg-obsidian pt-10 pb-14 sm:pt-16 sm:pb-20">
+    <div class="crimson-glow pointer-events-none absolute inset-0" />
+    <div class="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+        Est. 1986 • New Jersey
+      </p>
+      <h1 class="font-display mt-1 text-5xl leading-none text-white uppercase sm:text-7xl">
+        Band Bio
+      </h1>
+      <div class="slash-divider mt-4 w-28" />
+
+      <!-- Featured Promo Graphic -->
+      <div class="relative mt-8">
+        <div class="pointer-events-none absolute -top-2 -right-2 hidden h-36 w-36 bg-crimson sm:block" />
+        <img
+          src="/images/bio-wgfa.jpg"
+          alt="Skid Row 2026–2027 Lineup — Won't Get Fooled Again"
+          class="relative w-full border border-white/15 object-cover shadow-2xl"
+        />
+      </div>
+
+      <!-- High-Contrast Readable Bio Copy (Fixed from unreadable red-on-black Wix bio) -->
+      <div class="mx-auto mt-10 max-w-3xl">
+        <p class="font-display text-2xl leading-snug tracking-wide text-crimson uppercase sm:text-4xl">
+          {BIO_LEAD}
+        </p>
+
+        <div class="mt-6 space-y-5 text-base leading-relaxed text-chalk/90 sm:text-lg">
+          {BIO_PARAGRAPHS.map((paragraph) => (
+            <p class={paragraph.length < 40 ? 'font-display text-2xl tracking-wide text-white uppercase' : ''}>
+              {paragraph}
+            </p>
+          ))}
+        </div>
+      </div>
+
+      <!-- Band Lineup Cards -->
+      <div class="mt-16">
+        <div class="flex items-end justify-between">
+          <div>
+            <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+              The Lineup
+            </p>
+            <h2 class="font-display mt-1 text-4xl text-white uppercase sm:text-5xl">
+              Brothers in Arms
+            </h2>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {BAND_MEMBERS.map((member) => (
+            <article class="flex flex-col justify-between border border-white/12 bg-coal p-6 transition-colors hover:border-crimson/70">
+              <div>
+                <span class="font-mono-meta inline-block bg-crimson/20 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-crimson uppercase">
+                  {member.badge}
+                </span>
+                <h3 class="font-display mt-3 text-3xl text-white uppercase">
+                  {member.name}
+                </h3>
+                <p class="font-mono-meta mt-0.5 text-xs tracking-wider text-ash uppercase">
+                  {member.role}
+                </p>
+                <p class="mt-3 text-sm leading-relaxed text-chalk/80">
+                  {member.bio}
+                </p>
+              </div>
+
+              {member.instagram && (
+                <a
+                  href={member.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-mono-meta mt-5 inline-flex items-center gap-2 text-xs font-bold tracking-wider text-white uppercase transition-colors hover:text-crimson"
+                >
+                  <Icons name="instagram" class="h-4 w-4 text-crimson" />
+                  Follow on Instagram
+                  <Icons name="external" class="h-3.5 w-3.5" />
+                </a>
+              )}
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <!-- 40-Year Rebellion Timeline -->
+      <div class="mt-16 border-t border-white/10 pt-12">
+        <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+          Four Decades of Fire
+        </p>
+        <h2 class="font-display mt-1 text-4xl text-white uppercase sm:text-5xl">
+          1986 – 2027 Timeline
+        </h2>
+
+        <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-5">
+          {TIMELINE.map((item) => (
+            <div class="border-l-2 border-crimson bg-coal p-4 md:border-t-2 md:border-l-0">
+              <span class="font-display text-3xl text-crimson">{item.year}</span>
+              <h3 class="font-display mt-1 text-lg text-white uppercase">{item.title}</h3>
+              <p class="mt-1.5 text-xs leading-relaxed text-ash">{item.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Skid Row in Photos (Migrated from /copy-of-music-1) -->
+      <div class="mt-16 border-t border-white/10 pt-12">
+        <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+          Vault
+        </p>
+        <h2 class="font-display mt-1 text-4xl text-white uppercase sm:text-5xl">
+          Skid Row in Photos
+        </h2>
+        <div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {ARCHIVE_PHOTOS.map((src, i) => (
+            <div class="overflow-hidden border border-white/12 bg-coal">
+              <img
+                src={src}
+                alt={`Skid Row archival photo ${i + 1}`}
+                loading="lazy"
+                decoding="async"
+                class="aspect-square h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

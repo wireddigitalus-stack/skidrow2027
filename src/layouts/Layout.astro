@@ -1,0 +1,61 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import BottomBar from '../components/BottomBar.astro';
+import Telemetry from '../components/Telemetry.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  hideFooterMailingList?: boolean;
+}
+
+const {
+  title,
+  description = 'Official website of Skid Row. 2027 North American tour dates, new single "Won\'t Get Fooled Again", full discography, official videos, band bio, and latest news.',
+  image = '/images/hero-band.jpg',
+  hideFooterMailingList = false,
+} = Astro.props;
+
+const pageTitle = title === 'Skid Row' ? 'Skid Row | Official Site — 2027 Tour & New Music' : `${title} | Skid Row`;
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+
+    <!-- OpenGraph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+
+    <!-- Fonts: Anton (Display), Barlow (UI/Body), Space Mono (Dates/Meta) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-obsidian text-chalk antialiased">
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer hideMailingList={hideFooterMailingList} />
+    <BottomBar />
+    <Telemetry />
+  </body>
+</html>

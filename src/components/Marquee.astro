@@ -1,0 +1,34 @@
+---
+interface Props {
+  items?: string[];
+}
+
+const {
+  items = [
+    '2027 NORTH AMERICAN TOUR ON SALE NOW',
+    'NEW SINGLE "WON\'T GET FOOLED AGAIN" OUT NOW',
+    'WELCOME TO ROCKVILLE • SONIC TEMPLE',
+    '40 YEARS OF REBELLION • 1986–2027',
+  ],
+} = Astro.props;
+---
+
+<div
+  class="overflow-hidden border-y border-crimson/60 bg-crimson py-2.5 text-white select-none"
+  aria-label="Skid Row headlines ticker"
+>
+  <div class="animate-marquee">
+    {[0, 1].map(() => (
+      <div class="flex shrink-0 items-center">
+        {items.map((text) => (
+          <span class="flex items-center">
+            <span class="font-display px-5 text-sm tracking-widest uppercase sm:text-base">
+              {text}
+            </span>
+            <span class="text-xs text-black/80" aria-hidden="true">★</span>
+          </span>
+        ))}
+      </div>
+    ))}
+  </div>
+</div>

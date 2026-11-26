@@ -1,0 +1,1212 @@
+---
+import '../styles/global.css';
+import { isAuthenticated } from '../lib/auth';
+import { isSupabaseConfigured } from '../lib/db';
+
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'no-store, private');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+const authed = isAuthenticated(Astro.cookies);
+const usingSupabase = isSupabaseConfigured();
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="theme-color" content="#050505" />
+    <title>Backstage | Skid Row</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      @keyframes pin-shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-8px); }
+        40% { transform: translateX(8px); }
+        60% { transform: translateX(-6px); }
+        80% { transform: translateX(6px); }
+      }
+      .animate-shake {
+        animation: pin-shake 0.35s ease;
+      }
+    </style>
+  </head>
+  <body class="!pb-0 bg-obsidian text-chalk antialiased min-h-[100dvh]">
+    {!authed ? (
+      <!-- ==================== 6-DIGIT PIN GATE ==================== -->
+      <div class="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 py-10">
+        <div class="crimson-glow pointer-events-none absolute inset-0" />
+        <div class="rock-grain pointer-events-none absolute inset-0 opacity-35" />
+
+        <div class="relative w-full max-w-sm border border-white/15 bg-coal/95 p-6 shadow-2xl backdrop-blur-md sm:p-8">
+          <div class="flex flex-col items-center text-center">
+            <img
+              src="/images/skidrow-logo.avif"
+              alt="Skid Row"
+              class="h-12 w-auto drop-shadow-[0_6px_18px_rgba(226,28,33,0.45)]"
+            />
+            <div class="mt-3">
+              <div class="dymo-label">
+                <span class="dymo-text text-[10px]">SKID ROW // BACKSTAGE ACCESS</span>
+              </div>
+            </div>
+            <p class="font-mono-meta mt-5 text-xs tracking-widest text-ash uppercase">
+              Enter 6-Digit Access PIN
+            </p>
+          </div>
+
+          <!-- 6 Crimson LED Pips -->
+          <div id="pin-dots" class="mt-5 flex items-center justify-center gap-3">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div
+                data-dot={i}
+                class="h-4 w-4 rounded-full border border-white/25 bg-obsidian transition-all duration-150"
+              />
+            ))}
+          </div>
+
+          <!-- Error / Status -->
+          <p
+            id="pin-error"
+            class="mt-4 min-h-5 text-center font-mono-meta text-xs text-crimson"
+            role="alert"
+          ></p>
+
+          <!-- Tactile 3x4 Keypad -->
+          <div class="mt-3 grid grid-cols-3 gap-2.5">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+              <button
+                type="button"
+                data-digit={digit}
+                class="pin-key flex h-14 items-center justify-center border border-white/15 bg-obsidian font-display text-2xl text-white transition-all hover:border-crimson hover:bg-asphalt active:scale-95"
+              >
+                {digit}
+              </button>
+            ))}
+            <button
+              type="button"
+              id="pin-clear"
+              class="flex h-14 items-center justify-center border border-white/15 bg-obsidian font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-all hover:border-crimson hover:text-white active:scale-95"
+            >
+              CLR
+            </button>
+            <button
+              type="button"
+              data-digit="0"
+              class="pin-key flex h-14 items-center justify-center border border-white/15 bg-obsidian font-display text-2xl text-white transition-all hover:border-crimson hover:bg-asphalt active:scale-95"
+            >
+              0
+            </button>
+            <button
+              type="button"
+              id="pin-back"
+              class="flex h-14 items-center justify-center border border-white/15 bg-obsidian font-mono-meta text-sm font-bold text-ash transition-all hover:border-crimson hover:text-white active:scale-95"
+              aria-label="Backspace"
+            >
+              &larr;
+            </button>
+          </div>
+
+          <div class="mt-6 border-t border-white/10 pt-4 text-center">
+            <a
+              href="/"
+              class="font-mono-meta text-[11px] tracking-widest text-ash uppercase transition-colors hover:text-white"
+            >
+              &larr; Return to SkidRow.com
+            </a>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <!-- ==================== AUTHENTICATED BACKSTAGE DASHBOARD ==================== -->
+      <div class="flex min-h-[100dvh] flex-col">
+        <!-- Sticky Backstage Header -->
+        <header class="sticky top-0 z-40 border-b border-white/10 bg-coal/95 backdrop-blur-md">
+          <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3">
+              <img src="/images/skidrow-logo.avif" alt="Skid Row" class="h-7 w-auto" />
+              <div class="hidden sm:block">
+                <span class="font-mono-meta border border-crimson/50 bg-crimson/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.2em] text-crimson uppercase">
+                  Backstage Command
+                </span>
+              </div>
+              <span
+                class:list={[
+                  'hidden items-center gap-1.5 font-mono-meta text-[10px] tracking-wider uppercase md:inline-flex',
+                  usingSupabase ? 'text-emerald-400' : 'text-amber-400',
+                ]}
+              >
+                <span
+                  class:list={[
+                    'h-2 w-2 rounded-full',
+                    usingSupabase ? 'bg-emerald-400' : 'bg-amber-400',
+                  ]}
+                />
+                {usingSupabase ? 'Supabase Live' : 'Local Dev Store'}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <a
+                href="/"
+                target="_blank"
+                class="inline-flex min-h-9 items-center border border-white/15 bg-obsidian px-3 font-mono-meta text-[11px] tracking-wider text-chalk uppercase transition-colors hover:border-crimson hover:text-white"
+              >
+                Live Site &nearr;
+              </a>
+              <button
+                id="btn-lock"
+                type="button"
+                class="inline-flex min-h-9 items-center border border-crimson bg-crimson/20 px-3 font-mono-meta text-[11px] font-bold tracking-wider text-white uppercase transition-colors hover:bg-crimson"
+              >
+                Lock
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab Navigation Bar -->
+          <div class="border-t border-white/10 bg-obsidian/90">
+            <div class="no-scrollbar mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8">
+              {[
+                { id: 'analytics', label: '01 Telemetry & Analytics' },
+                { id: 'leads', label: '02 Leads & Newsletter' },
+                { id: 'posts', label: '03 News / Blog Editor' },
+                { id: 'system', label: '04 System & Supabase' },
+              ].map((t, idx) => (
+                <button
+                  type="button"
+                  data-tab={t.id}
+                  class:list={[
+                    'bs-tab shrink-0 border-b-2 px-4 py-3 font-mono-meta text-xs font-bold tracking-wider uppercase transition-colors',
+                    idx === 0
+                      ? 'border-crimson text-white'
+                      : 'border-transparent text-ash hover:text-white',
+                  ]}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
+
+        <!-- Toast Banner -->
+        <div
+          id="bs-toast"
+          class="fixed right-4 bottom-4 z-50 hidden max-w-sm border border-crimson bg-coal px-4 py-3 font-mono-meta text-xs text-white shadow-2xl"
+        ></div>
+
+        <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          <!-- ========== TAB 1: ANALYTICS & TELEMETRY ========== -->
+          <section id="panel-analytics" class="bs-panel space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h1 class="font-display text-3xl text-white uppercase sm:text-4xl">
+                  Fan Telemetry &amp; Analytics
+                </h1>
+                <p class="font-mono-meta text-xs text-ash uppercase">
+                  First-party pageviews, ticket taps, streaming clicks &amp; mobile split
+                </p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  data-days="7"
+                  class="range-btn border border-crimson bg-crimson px-3 py-1.5 font-mono-meta text-xs font-bold text-white uppercase"
+                >
+                  7 Days
+                </button>
+                <button
+                  type="button"
+                  data-days="30"
+                  class="range-btn border border-white/20 bg-coal px-3 py-1.5 font-mono-meta text-xs font-bold text-ash uppercase hover:border-crimson hover:text-white"
+                >
+                  30 Days
+                </button>
+                <button
+                  type="button"
+                  id="refresh-analytics"
+                  class="border border-white/20 bg-coal px-3 py-1.5 font-mono-meta text-xs text-chalk uppercase hover:border-crimson"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <div class="border border-white/12 bg-coal p-4">
+                <span class="font-mono-meta text-[10px] tracking-wider text-ash uppercase">Pageviews</span>
+                <p id="kpi-views" class="font-display mt-1 text-4xl text-white">—</p>
+              </div>
+              <div class="border border-white/12 bg-coal p-4">
+                <span class="font-mono-meta text-[10px] tracking-wider text-ash uppercase">Sessions</span>
+                <p id="kpi-sessions" class="font-display mt-1 text-4xl text-white">—</p>
+              </div>
+              <div class="border border-white/12 bg-coal p-4">
+                <span class="font-mono-meta text-[10px] tracking-wider text-ash uppercase">Mobile Traffic</span>
+                <p id="kpi-mobile" class="font-display mt-1 text-4xl text-crimson">—</p>
+              </div>
+              <div class="border border-white/12 bg-coal p-4">
+                <span class="font-mono-meta text-[10px] tracking-wider text-ash uppercase">Ticket / Link Clicks</span>
+                <p id="kpi-clicks" class="font-display mt-1 text-4xl text-white">—</p>
+              </div>
+              <div class="col-span-2 border border-crimson/40 bg-coal p-4 sm:col-span-1">
+                <span class="font-mono-meta text-[10px] tracking-wider text-crimson uppercase">Total Leads</span>
+                <p id="kpi-leads" class="font-display mt-1 text-4xl text-white">—</p>
+              </div>
+            </div>
+
+            <!-- Daily Traffic Bar Chart -->
+            <div class="border border-white/12 bg-coal p-5">
+              <div class="mb-4 flex items-center justify-between">
+                <h2 class="font-display text-xl text-white uppercase">Daily Fan Traffic</h2>
+                <div class="flex items-center gap-4 font-mono-meta text-[10px] text-ash uppercase">
+                  <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 bg-crimson" /> Pageviews</span>
+                  <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 bg-white" /> Clicks</span>
+                </div>
+              </div>
+              <div id="daily-chart" class="flex h-44 items-end gap-1.5 border-b border-white/10 pt-4 pb-1"></div>
+              <div id="daily-labels" class="mt-2 flex justify-between font-mono-meta text-[10px] text-ash"></div>
+            </div>
+
+            <!-- Top Pages / Top Clicks / Sources -->
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div class="border border-white/12 bg-coal p-5">
+                <h3 class="font-display text-xl text-white uppercase">Top Pages</h3>
+                <ul id="top-pages" class="mt-3 divide-y divide-white/10 text-sm"></ul>
+              </div>
+              <div class="border border-white/12 bg-coal p-5">
+                <h3 class="font-display text-xl text-white uppercase">Top Ticket &amp; Link Taps</h3>
+                <ul id="top-clicks" class="mt-3 divide-y divide-white/10 text-sm"></ul>
+              </div>
+              <div class="border border-white/12 bg-coal p-5">
+                <h3 class="font-display text-xl text-white uppercase">Sources &amp; Devices</h3>
+                <div id="device-bars" class="mt-3 space-y-2.5"></div>
+                <h4 class="font-mono-meta mt-5 text-[10px] tracking-widest text-ash uppercase">Top Referrers / UTM</h4>
+                <ul id="top-sources" class="mt-2 divide-y divide-white/10 text-sm"></ul>
+              </div>
+            </div>
+
+            <!-- Live Recent Event Stream -->
+            <div class="border border-white/12 bg-coal p-5">
+              <h3 class="font-display text-xl text-white uppercase">Live Event Stream</h3>
+              <div class="mt-3 overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="border-b border-white/10 font-mono-meta text-[10px] text-ash uppercase">
+                    <tr>
+                      <th class="py-2 pr-3">Time</th>
+                      <th class="py-2 pr-3">Event</th>
+                      <th class="py-2 pr-3">Path / Target</th>
+                      <th class="py-2 pr-3">Device</th>
+                      <th class="py-2">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-events" class="divide-y divide-white/5 text-chalk/85"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- ========== TAB 2: LEADS & NEWSLETTER CRM ========== -->
+          <section id="panel-leads" class="bs-panel hidden space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h1 class="font-display text-3xl text-white uppercase sm:text-4xl">
+                  Leads &amp; Newsletter CRM
+                </h1>
+                <p class="font-mono-meta text-xs text-ash uppercase">
+                  Mailing list &amp; 2027 pre-sale fan signups
+                </p>
+              </div>
+              <a
+                href="/api/admin/leads/export"
+                class="btn-crimson !min-h-10 !px-4 !py-2 text-sm"
+              >
+                Export CSV &darr;
+              </a>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div class="border border-white/12 bg-coal p-4">
+                <span class="font-mono-meta text-[10px] text-ash uppercase">Total Leads</span>
+                <p id="lead-stat-total" class="font-display mt-1 text-3xl text-white">0</p>
+              </div>
+              <div class="border border-white/12 bg-coal p-4">
+                <span class="font-mono-meta text-[10px] text-ash uppercase">Active</span>
+                <p id="lead-stat-active" class="font-display mt-1 text-3xl text-emerald-400">0</p>
+              </div>
+              <div class="border border-white/12 bg-coal p-4">
+                <span class="font-mono-meta text-[10px] text-ash uppercase">VIP</span>
+                <p id="lead-stat-vip" class="font-display mt-1 text-3xl text-crimson">0</p>
+              </div>
+              <div class="border border-white/12 bg-coal p-4">
+                <span class="font-mono-meta text-[10px] text-ash uppercase">With SMS Phone</span>
+                <p id="lead-stat-sms" class="font-display mt-1 text-3xl text-white">0</p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-3 sm:flex-row">
+              <input
+                id="lead-search"
+                type="search"
+                placeholder="Search name, email, phone..."
+                class="min-h-11 flex-1 border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
+              />
+              <select
+                id="lead-status-filter"
+                class="min-h-11 border border-white/20 bg-coal px-3.5 font-mono-meta text-xs text-white uppercase focus:border-crimson focus:outline-none"
+              >
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="vip">VIP</option>
+                <option value="unsubscribed">Unsubscribed</option>
+              </select>
+            </div>
+
+            <div class="overflow-x-auto border border-white/12 bg-coal">
+              <table class="w-full text-left text-xs sm:text-sm">
+                <thead class="border-b border-white/10 bg-obsidian/70 font-mono-meta text-[10px] text-ash uppercase">
+                  <tr>
+                    <th class="px-4 py-3">Fan</th>
+                    <th class="px-4 py-3">Email &amp; Phone</th>
+                    <th class="px-4 py-3">Source</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3">Date</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="leads-tbody" class="divide-y divide-white/10"></tbody>
+              </table>
+              <p id="leads-empty" class="hidden p-8 text-center font-mono-meta text-xs text-ash uppercase">
+                No leads captured yet. Submit the newsletter form on the homepage to test!
+              </p>
+            </div>
+          </section>
+
+          <!-- ========== TAB 3: NEWS / BLOG EDITOR (LIVE CMS) ========== -->
+          <section id="panel-posts" class="bs-panel hidden space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h1 class="font-display text-3xl text-white uppercase sm:text-4xl">
+                  News &amp; Blog CMS Editor
+                </h1>
+                <p class="font-mono-meta text-xs text-ash uppercase">
+                  Published posts go live on / and /news instantly
+                </p>
+              </div>
+              <button
+                type="button"
+                id="btn-new-post"
+                class="btn-crimson !min-h-10 !px-4 !py-2 text-sm"
+              >
+                + New Dispatch
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              <!-- Posts List -->
+              <div class="space-y-2 lg:col-span-5">
+                <input
+                  id="cms-post-search"
+                  type="search"
+                  placeholder="Filter dispatches..."
+                  class="min-h-10 w-full border border-white/20 bg-coal px-3 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
+                />
+                <div
+                  id="cms-posts-list"
+                  class="max-h-[680px] divide-y divide-white/10 overflow-y-auto border border-white/12 bg-coal"
+                ></div>
+              </div>
+
+              <!-- Post Editor Form -->
+              <div class="border border-white/15 bg-coal p-5 lg:col-span-7">
+                <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
+                  <h2 id="editor-heading" class="font-display text-2xl text-white uppercase">
+                    Create New Dispatch
+                  </h2>
+                  <a
+                    id="editor-view-live"
+                    href="/news"
+                    target="_blank"
+                    class="hidden font-mono-meta text-xs text-crimson underline uppercase"
+                  >
+                    View Live &nearr;
+                  </a>
+                </div>
+
+                <form id="post-editor-form" class="space-y-4">
+                  <input type="hidden" name="id" id="ed-id" />
+
+                  <div>
+                    <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                      Headline Title *
+                    </label>
+                    <input
+                      id="ed-title"
+                      name="title"
+                      required
+                      placeholder="e.g., Skid Row Adds New 2027 Summer Arena Dates!"
+                      class="min-h-11 w-full border border-white/20 bg-obsidian px-3 text-sm text-white focus:border-crimson focus:outline-none"
+                    />
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div>
+                      <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                        URL Slug
+                      </label>
+                      <input
+                        id="ed-slug"
+                        name="slug"
+                        placeholder="auto-generated"
+                        class="min-h-11 w-full border border-white/20 bg-obsidian px-3 font-mono-meta text-xs text-white focus:border-crimson focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                        Category
+                      </label>
+                      <select
+                        id="ed-category"
+                        name="category"
+                        class="min-h-11 w-full border border-white/20 bg-obsidian px-3 text-sm text-white focus:border-crimson focus:outline-none"
+                      >
+                        <option value="Tour">Tour</option>
+                        <option value="Music">Music</option>
+                        <option value="Band News" selected>Band News</option>
+                        <option value="Solo / Press">Solo / Press</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                        Status
+                      </label>
+                      <select
+                        id="ed-status"
+                        name="status"
+                        class="min-h-11 w-full border border-white/20 bg-obsidian px-3 text-sm text-white focus:border-crimson focus:outline-none"
+                      >
+                        <option value="published">Published (Live)</option>
+                        <option value="draft">Draft (Hidden)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                        Publish Date
+                      </label>
+                      <input
+                        id="ed-isoDate"
+                        name="isoDate"
+                        type="date"
+                        class="min-h-11 w-full border border-white/20 bg-obsidian px-3 font-mono-meta text-xs text-white focus:border-crimson focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                        Tags (comma-separated)
+                      </label>
+                      <input
+                        id="ed-tags"
+                        name="tags"
+                        placeholder="Skid Row, 2027, Tour"
+                        class="min-h-11 w-full border border-white/20 bg-obsidian px-3 text-sm text-white focus:border-crimson focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Cover Image URL + Direct Upload -->
+                  <div>
+                    <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                      Cover Image URL or Direct Upload
+                    </label>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        id="ed-image"
+                        name="image"
+                        value="/images/hero-band.jpg"
+                        class="min-h-11 flex-1 border border-white/20 bg-obsidian px-3 font-mono-meta text-xs text-white focus:border-crimson focus:outline-none"
+                      />
+                      <label class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-white/25 bg-asphalt px-4 font-mono-meta text-xs font-bold text-white uppercase transition-colors hover:border-crimson">
+                        Upload File
+                        <input id="ed-upload" type="file" accept="image/*" class="hidden" />
+                      </label>
+                    </div>
+                    <img
+                      id="ed-preview-img"
+                      src="/images/hero-band.jpg"
+                      alt="Cover preview"
+                      class="mt-2 h-32 w-full border border-white/10 object-cover"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                      Short Excerpt
+                    </label>
+                    <textarea
+                      id="ed-excerpt"
+                      name="excerpt"
+                      rows="2"
+                      placeholder="1–2 sentence summary shown on news cards..."
+                      class="w-full border border-white/20 bg-obsidian p-3 text-sm text-white focus:border-crimson focus:outline-none"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                      Article Body (separate paragraphs with a blank line) *
+                    </label>
+                    <textarea
+                      id="ed-body"
+                      name="body"
+                      rows="7"
+                      required
+                      placeholder="Write your full Skid Row announcement here..."
+                      class="w-full border border-white/20 bg-obsidian p-3 text-sm leading-relaxed text-white focus:border-crimson focus:outline-none"
+                    ></textarea>
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                        Optional Button Label
+                      </label>
+                      <input
+                        id="ed-ctaLabel"
+                        name="ctaLabel"
+                        placeholder="e.g., Get Tickets Now"
+                        class="min-h-11 w-full border border-white/20 bg-obsidian px-3 text-sm text-white focus:border-crimson focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label class="font-mono-meta mb-1 block text-[10px] text-ash uppercase">
+                        Optional Button URL
+                      </label>
+                      <input
+                        id="ed-ctaUrl"
+                        name="ctaUrl"
+                        placeholder="https://... or /tour"
+                        class="min-h-11 w-full border border-white/20 bg-obsidian px-3 font-mono-meta text-xs text-white focus:border-crimson focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+                    <button type="submit" class="btn-crimson">
+                      Save &amp; Publish Dispatch
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-delete-post"
+                      class="hidden border border-crimson/60 bg-crimson/10 px-4 py-2.5 font-mono-meta text-xs font-bold text-crimson uppercase hover:bg-crimson hover:text-white"
+                    >
+                      Delete Post
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <!-- ========== TAB 4: SYSTEM & SUPABASE STATUS ========== -->
+          <section id="panel-system" class="bs-panel hidden space-y-6">
+            <div>
+              <h1 class="font-display text-3xl text-white uppercase sm:text-4xl">
+                System, Supabase &amp; Security
+              </h1>
+              <p class="font-mono-meta text-xs text-ash uppercase">
+                Environment readiness, Supabase seeding &amp; Backstage audit trail
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="border border-white/12 bg-coal p-5">
+                <h2 class="font-display text-2xl text-white uppercase">Deployment Checklist</h2>
+                <ul id="env-checklist" class="mt-4 space-y-2.5 font-mono-meta text-xs"></ul>
+              </div>
+
+              <div class="border border-white/12 bg-coal p-5">
+                <h2 class="font-display text-2xl text-white uppercase">Supabase Seed Tool</h2>
+                <p class="mt-2 text-sm text-ash">
+                  When you first connect a fresh Supabase project (after running <code class="text-white">supabase/schema.sql</code>), click below to populate all 20 scraped Skid Row news posts into Postgres.
+                </p>
+                <button type="button" id="btn-seed-posts" class="btn-outline mt-4">
+                  Seed 20 Skid Row Posts
+                </button>
+              </div>
+            </div>
+
+            <div class="border border-white/12 bg-coal p-5">
+              <h2 class="font-display text-2xl text-white uppercase">Security &amp; Audit Log</h2>
+              <div class="mt-3 overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="border-b border-white/10 font-mono-meta text-[10px] text-ash uppercase">
+                    <tr>
+                      <th class="py-2 pr-3">Time</th>
+                      <th class="py-2 pr-3">Action</th>
+                      <th class="py-2 pr-3">Details</th>
+                      <th class="py-2">IP</th>
+                    </tr>
+                  </thead>
+                  <tbody id="audit-tbody" class="divide-y divide-white/5 text-chalk/85"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    )}
+
+    <script>
+      // ==================== 6-DIGIT PIN GATE LOGIC ====================
+      if (document.getElementById('pin-dots')) {
+        let pin = '';
+        let busy = false;
+        const dots = document.querySelectorAll<HTMLElement>('[data-dot]');
+        const dotsWrap = document.getElementById('pin-dots');
+        const errEl = document.getElementById('pin-error');
+
+        function renderDots() {
+          dots.forEach((d, idx) => {
+            const filled = idx < pin.length;
+            d.classList.toggle('bg-crimson', filled);
+            d.classList.toggle('border-crimson', filled);
+            d.classList.toggle('shadow-[0_0_12px_rgba(226,28,33,0.8)]', filled);
+            d.classList.toggle('bg-obsidian', !filled);
+            d.classList.toggle('border-white/25', !filled);
+          });
+        }
+
+        async function submitPin() {
+          if (busy || pin.length !== 6) return;
+          busy = true;
+          if (errEl) errEl.textContent = 'Verifying...';
+          try {
+            const res = await fetch('/api/admin/auth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pin }),
+            });
+            const json = await res.json();
+            if (res.ok && json.ok) {
+              window.location.reload();
+              return;
+            }
+            if (errEl) errEl.textContent = json.error || 'Access denied';
+            dotsWrap?.classList.remove('animate-shake');
+            void dotsWrap?.offsetWidth;
+            dotsWrap?.classList.add('animate-shake');
+            pin = '';
+            renderDots();
+          } catch {
+            if (errEl) errEl.textContent = 'Connection error. Try again.';
+            pin = '';
+            renderDots();
+          } finally {
+            busy = false;
+          }
+        }
+
+        function pushDigit(d: string) {
+          if (busy || pin.length >= 6) return;
+          if (errEl) errEl.textContent = '';
+          pin += d;
+          renderDots();
+          if (pin.length === 6) submitPin();
+        }
+
+        document.querySelectorAll<HTMLButtonElement>('.pin-key').forEach((btn) => {
+          btn.addEventListener('click', () => pushDigit(btn.dataset.digit || ''));
+        });
+        document.getElementById('pin-clear')?.addEventListener('click', () => {
+          if (busy) return;
+          pin = '';
+          if (errEl) errEl.textContent = '';
+          renderDots();
+        });
+        document.getElementById('pin-back')?.addEventListener('click', () => {
+          if (busy) return;
+          pin = pin.slice(0, -1);
+          renderDots();
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (/^\d$/.test(e.key)) {
+            pushDigit(e.key);
+          } else if (e.key === 'Backspace') {
+            pin = pin.slice(0, -1);
+            renderDots();
+          } else if (e.key === 'Escape') {
+            pin = '';
+            renderDots();
+          }
+        });
+      }
+
+      // ==================== BACKSTAGE DASHBOARD LOGIC ====================
+      let currentDays = 7;
+        let allLeads: any[] = [];
+        let allPosts: any[] = [];
+
+        function toast(msg: string) {
+          const el = document.getElementById('bs-toast');
+          if (!el) return;
+          el.textContent = msg;
+          el.classList.remove('hidden');
+          clearTimeout((window as any).__bsToastTimer);
+          (window as any).__bsToastTimer = setTimeout(() => el.classList.add('hidden'), 3500);
+        }
+
+        function esc(str: string) {
+          return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        }
+
+        // Tabs
+        const tabs = document.querySelectorAll<HTMLButtonElement>('.bs-tab');
+        const panels = document.querySelectorAll<HTMLElement>('.bs-panel');
+        tabs.forEach((tab) => {
+          tab.addEventListener('click', () => {
+            const target = tab.dataset.tab;
+            tabs.forEach((t) => {
+              const active = t === tab;
+              t.classList.toggle('border-crimson', active);
+              t.classList.toggle('text-white', active);
+              t.classList.toggle('border-transparent', !active);
+              t.classList.toggle('text-ash', !active);
+            });
+            panels.forEach((p) => {
+              p.classList.toggle('hidden', p.id !== `panel-${target}`);
+            });
+          });
+        });
+
+        // Lock / Sign out
+        document.getElementById('btn-lock')?.addEventListener('click', async () => {
+          await fetch('/api/admin/auth', { method: 'DELETE' });
+          window.location.reload();
+        });
+
+        // Load Analytics + System
+        async function loadAnalytics(days = currentDays) {
+          currentDays = days;
+          const res = await fetch(`/api/admin/analytics?days=${days}`);
+          if (res.status === 401) return window.location.reload();
+          const data = await res.json();
+          const a = data.analytics;
+
+          (document.getElementById('kpi-views')!).textContent = String(a.totalPageviews);
+          (document.getElementById('kpi-sessions')!).textContent = String(a.uniqueSessions);
+          (document.getElementById('kpi-mobile')!).textContent = `${a.mobilePct}%`;
+          (document.getElementById('kpi-clicks')!).textContent = String(a.totalClicks);
+
+          // Daily Chart
+          const maxVal = Math.max(1, ...a.daily.map((d: any) => d.pageviews + d.clicks));
+          const chartEl = document.getElementById('daily-chart')!;
+          chartEl.innerHTML = a.daily
+            .map((d: any) => {
+              const pvH = Math.round((d.pageviews / maxVal) * 100);
+              const clH = Math.round((d.clicks / maxVal) * 100);
+              return `<div class="group relative flex h-full flex-1 flex-col justify-end" title="${esc(d.label)}: ${d.pageviews} views, ${d.clicks} clicks">
+                <div class="w-full bg-white/90 transition-all" style="height:${clH}%"></div>
+                <div class="w-full bg-crimson transition-all group-hover:bg-crimson-bright" style="height:${Math.max(pvH, d.pageviews ? 4 : 0)}%"></div>
+              </div>`;
+            })
+            .join('');
+
+          const labelsEl = document.getElementById('daily-labels')!;
+          const step = a.daily.length > 10 ? 5 : 1;
+          labelsEl.innerHTML = a.daily
+            .filter((_: any, i: number) => i % step === 0 || i === a.daily.length - 1)
+            .map((d: any) => `<span>${esc(d.label)}</span>`)
+            .join('');
+
+          // Top Pages
+          document.getElementById('top-pages')!.innerHTML = a.topPages.length
+            ? a.topPages
+                .map(
+                  (p: any) =>
+                    `<li class="flex items-center justify-between py-2"><span class="font-mono-meta text-xs text-chalk">${esc(p.path)}</span><span class="font-mono-meta text-xs font-bold text-crimson">${p.count}</span></li>`
+                )
+                .join('')
+            : '<li class="py-3 text-xs text-ash">No pageviews recorded yet.</li>';
+
+          // Top Clicks
+          document.getElementById('top-clicks')!.innerHTML = a.topClicks.length
+            ? a.topClicks
+                .map(
+                  (c: any) =>
+                    `<li class="flex items-center justify-between gap-2 py-2"><span class="truncate text-xs text-chalk">${esc(c.label)}</span><span class="font-mono-meta shrink-0 text-xs font-bold text-crimson">${c.count}</span></li>`
+                )
+                .join('')
+            : '<li class="py-3 text-xs text-ash">No outbound clicks recorded yet.</li>';
+
+          // Device bars
+          const totalDev = Math.max(
+            1,
+            (a.deviceCounts.mobile || 0) + (a.deviceCounts.desktop || 0) + (a.deviceCounts.tablet || 0)
+          );
+          document.getElementById('device-bars')!.innerHTML = [
+            { name: 'Mobile', count: a.deviceCounts.mobile || 0, color: 'bg-crimson' },
+            { name: 'Desktop', count: a.deviceCounts.desktop || 0, color: 'bg-white' },
+            { name: 'Tablet', count: a.deviceCounts.tablet || 0, color: 'bg-ash' },
+          ]
+            .map((d) => {
+              const pct = Math.round((d.count / totalDev) * 100);
+              return `<div>
+                <div class="flex justify-between font-mono-meta text-[11px]"><span>${d.name}</span><span>${pct}% (${d.count})</span></div>
+                <div class="mt-1 h-2 bg-obsidian"><div class="h-full ${d.color}" style="width:${pct}%"></div></div>
+              </div>`;
+            })
+            .join('');
+
+          // Sources
+          document.getElementById('top-sources')!.innerHTML = a.topSources
+            .map(
+              (s: any) =>
+                `<li class="flex items-center justify-between py-1.5"><span class="text-xs text-chalk">${esc(s.source)}</span><span class="font-mono-meta text-xs text-ash">${s.count}</span></li>`
+            )
+            .join('');
+
+          // Live Event Stream
+          document.getElementById('recent-events')!.innerHTML = a.recentEvents
+            .map((e: any) => {
+              const t = new Date(e.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const badge =
+                e.event_type === 'signup'
+                  ? 'bg-emerald-900/70 text-emerald-300'
+                  : e.event_type === 'click' || e.event_type === 'video_play'
+                    ? 'bg-crimson/25 text-crimson'
+                    : 'bg-white/10 text-chalk';
+              return `<tr>
+                <td class="py-2 pr-3 font-mono-meta text-[11px] text-ash">${t}</td>
+                <td class="py-2 pr-3"><span class="px-1.5 py-0.5 font-mono-meta text-[10px] uppercase ${badge}">${esc(e.event_type)}</span></td>
+                <td class="py-2 pr-3">${esc(e.target_label || e.path)}</td>
+                <td class="py-2 pr-3 font-mono-meta text-[11px] uppercase text-ash">${esc(e.device_type)}</td>
+                <td class="py-2 font-mono-meta text-[11px] text-ash">${esc(e.utm_source || e.referrer || 'direct')}</td>
+              </tr>`;
+            })
+            .join('');
+
+          // System checklist
+          const env = data.system.env;
+          const items = [
+            { label: `Storage: ${data.system.backend}`, ok: data.system.isSupabase, warn: !data.system.isSupabase },
+            { label: 'SUPABASE_URL configured', ok: env.hasSupabaseUrl },
+            { label: 'SUPABASE_SERVICE_ROLE_KEY configured', ok: env.hasSupabaseKey },
+            { label: 'Custom 6-Digit ADMIN_PIN set', ok: env.hasCustomPin },
+            { label: 'SESSION_SECRET configured', ok: env.hasSessionSecret },
+            { label: 'Optional MailerLite API Sync', ok: env.hasMailerLite },
+          ];
+          document.getElementById('env-checklist')!.innerHTML = items
+            .map(
+              (item) =>
+                `<li class="flex items-center justify-between border border-white/10 bg-obsidian px-3 py-2">
+                  <span>${esc(item.label)}</span>
+                  <span class="${item.ok ? 'text-emerald-400' : 'text-amber-400'} font-bold uppercase">${item.ok ? 'READY' : 'LOCAL / OPTIONAL'}</span>
+                </li>`
+            )
+            .join('');
+
+          // Audit Logs
+          document.getElementById('audit-tbody')!.innerHTML = (data.auditLogs || [])
+            .map((log: any) => {
+              const dt = new Date(log.created_at).toLocaleString();
+              return `<tr>
+                <td class="py-2 pr-3 font-mono-meta text-[11px] text-ash">${esc(dt)}</td>
+                <td class="py-2 pr-3 font-mono-meta text-[11px] font-bold text-crimson">${esc(log.action)}</td>
+                <td class="py-2 pr-3">${esc(log.details)}</td>
+                <td class="py-2 font-mono-meta text-[11px] text-ash">${esc(log.ip)}</td>
+              </tr>`;
+            })
+            .join('');
+        }
+
+        document.querySelectorAll<HTMLButtonElement>('.range-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const days = Number(btn.dataset.days || '7');
+            document.querySelectorAll<HTMLButtonElement>('.range-btn').forEach((b) => {
+              const active = b === btn;
+              b.classList.toggle('bg-crimson', active);
+              b.classList.toggle('border-crimson', active);
+              b.classList.toggle('text-white', active);
+              b.classList.toggle('bg-coal', !active);
+              b.classList.toggle('border-white/20', !active);
+              b.classList.toggle('text-ash', !active);
+            });
+            loadAnalytics(days);
+          });
+        });
+        document.getElementById('refresh-analytics')?.addEventListener('click', () => {
+          loadAnalytics(currentDays);
+          toast('Telemetry refreshed');
+        });
+
+        // Load Leads
+        async function loadLeads() {
+          const res = await fetch('/api/admin/leads');
+          if (res.status === 401) return window.location.reload();
+          const data = await res.json();
+          allLeads = data.leads || [];
+          (document.getElementById('kpi-leads')!).textContent = String(allLeads.length);
+          (document.getElementById('lead-stat-total')!).textContent = String(allLeads.length);
+          (document.getElementById('lead-stat-active')!).textContent = String(
+            allLeads.filter((l) => l.status === 'active').length
+          );
+          (document.getElementById('lead-stat-vip')!).textContent = String(
+            allLeads.filter((l) => l.status === 'vip').length
+          );
+          (document.getElementById('lead-stat-sms')!).textContent = String(
+            allLeads.filter((l) => Boolean(l.phone)).length
+          );
+          renderLeads();
+        }
+
+        function renderLeads() {
+          const q = (document.getElementById('lead-search') as HTMLInputElement).value.trim().toLowerCase();
+          const st = (document.getElementById('lead-status-filter') as HTMLSelectElement).value;
+          const filtered = allLeads.filter((l) => {
+            const matchSt = st === 'all' || l.status === st;
+            const hay = `${l.first_name} ${l.last_name} ${l.email} ${l.phone}`.toLowerCase();
+            return matchSt && (!q || hay.includes(q));
+          });
+
+          const tbody = document.getElementById('leads-tbody')!;
+          const empty = document.getElementById('leads-empty')!;
+          empty.classList.toggle('hidden', filtered.length > 0);
+          tbody.innerHTML = filtered
+            .map((l) => {
+              const name = `${l.first_name || ''} ${l.last_name || ''}`.trim() || '—';
+              const dt = new Date(l.created_at).toLocaleDateString();
+              return `<tr>
+                <td class="px-4 py-3 font-semibold text-white">${esc(name)}</td>
+                <td class="px-4 py-3">
+                  <div class="font-mono-meta text-xs text-chalk">${esc(l.email)}</div>
+                  ${l.phone ? `<div class="font-mono-meta text-[11px] text-ash">${esc(l.phone)}</div>` : ''}
+                </td>
+                <td class="px-4 py-3 font-mono-meta text-[11px] text-ash">${esc(l.source_page)}${l.utm_source ? ` · ${esc(l.utm_source)}` : ''}</td>
+                <td class="px-4 py-3">
+                  <select data-lead-status="${esc(l.id)}" class="border border-white/20 bg-obsidian px-2 py-1 font-mono-meta text-[11px] text-white uppercase">
+                    <option value="active" ${l.status === 'active' ? 'selected' : ''}>Active</option>
+                    <option value="vip" ${l.status === 'vip' ? 'selected' : ''}>VIP</option>
+                    <option value="unsubscribed" ${l.status === 'unsubscribed' ? 'selected' : ''}>Unsubscribed</option>
+                  </select>
+                </td>
+                <td class="px-4 py-3 font-mono-meta text-[11px] text-ash">${esc(dt)}</td>
+                <td class="px-4 py-3 text-right">
+                  <button type="button" data-lead-del="${esc(l.id)}" class="font-mono-meta text-[11px] text-crimson uppercase hover:underline">Delete</button>
+                </td>
+              </tr>`;
+            })
+            .join('');
+
+          tbody.querySelectorAll<HTMLSelectElement>('[data-lead-status]').forEach((sel) => {
+            sel.addEventListener('change', async () => {
+              const id = sel.dataset.leadStatus;
+              await fetch('/api/admin/leads', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status: sel.value }),
+              });
+              toast('Lead status updated');
+              loadLeads();
+            });
+          });
+
+          tbody.querySelectorAll<HTMLButtonElement>('[data-lead-del]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              if (!confirm('Delete this lead permanently?')) return;
+              await fetch(`/api/admin/leads?id=${encodeURIComponent(btn.dataset.leadDel || '')}`, {
+                method: 'DELETE',
+              });
+              toast('Lead deleted');
+              loadLeads();
+            });
+          });
+        }
+
+        document.getElementById('lead-search')?.addEventListener('input', renderLeads);
+        document.getElementById('lead-status-filter')?.addEventListener('change', renderLeads);
+
+        // Load & Edit News Posts
+        async function loadPosts() {
+          const res = await fetch('/api/admin/posts');
+          if (res.status === 401) return window.location.reload();
+          const data = await res.json();
+          allPosts = data.posts || [];
+          renderPostsList();
+        }
+
+        function renderPostsList() {
+          const q = (document.getElementById('cms-post-search') as HTMLInputElement).value.trim().toLowerCase();
+          const filtered = allPosts.filter((p) => !q || p.title.toLowerCase().includes(q));
+          const list = document.getElementById('cms-posts-list')!;
+          list.innerHTML = filtered
+            .map(
+              (p) => `<button type="button" data-edit-post="${esc(p.id)}" class="flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-asphalt">
+                <img src="${esc(p.image)}" alt="" class="h-12 w-16 shrink-0 border border-white/10 object-cover" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 font-mono-meta text-[10px] uppercase">
+                    <span class="${p.status === 'published' ? 'text-emerald-400' : 'text-amber-400'} font-bold">${esc(p.status)}</span>
+                    <span class="text-ash">${esc(p.date)}</span>
+                  </div>
+                  <p class="mt-0.5 line-clamp-2 text-sm font-semibold text-white">${esc(p.title)}</p>
+                </div>
+              </button>`
+            )
+            .join('');
+
+          list.querySelectorAll<HTMLButtonElement>('[data-edit-post]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const post = allPosts.find((p) => p.id === btn.dataset.editPost);
+              if (post) populateEditor(post);
+            });
+          });
+        }
+
+        function resetEditor() {
+          (document.getElementById('editor-heading')!).textContent = 'Create New Dispatch';
+          (document.getElementById('ed-id') as HTMLInputElement).value = '';
+          (document.getElementById('ed-title') as HTMLInputElement).value = '';
+          (document.getElementById('ed-slug') as HTMLInputElement).value = '';
+          (document.getElementById('ed-category') as HTMLSelectElement).value = 'Band News';
+          (document.getElementById('ed-status') as HTMLSelectElement).value = 'published';
+          (document.getElementById('ed-isoDate') as HTMLInputElement).value = new Date().toISOString().slice(0, 10);
+          (document.getElementById('ed-tags') as HTMLInputElement).value = 'Skid Row, 2027';
+          (document.getElementById('ed-image') as HTMLInputElement).value = '/images/hero-band.jpg';
+          (document.getElementById('ed-preview-img') as HTMLImageElement).src = '/images/hero-band.jpg';
+          (document.getElementById('ed-excerpt') as HTMLTextAreaElement).value = '';
+          (document.getElementById('ed-body') as HTMLTextAreaElement).value = '';
+          (document.getElementById('ed-ctaLabel') as HTMLInputElement).value = '';
+          (document.getElementById('ed-ctaUrl') as HTMLInputElement).value = '';
+          document.getElementById('btn-delete-post')?.classList.add('hidden');
+          document.getElementById('editor-view-live')?.classList.add('hidden');
+        }
+
+        function populateEditor(p: any) {
+          (document.getElementById('editor-heading')!).textContent = 'Edit Dispatch';
+          (document.getElementById('ed-id') as HTMLInputElement).value = p.id || '';
+          (document.getElementById('ed-title') as HTMLInputElement).value = p.title || '';
+          (document.getElementById('ed-slug') as HTMLInputElement).value = p.slug || '';
+          (document.getElementById('ed-category') as HTMLSelectElement).value = p.category || 'Band News';
+          (document.getElementById('ed-status') as HTMLSelectElement).value = p.status || 'published';
+          (document.getElementById('ed-isoDate') as HTMLInputElement).value = p.isoDate || new Date().toISOString().slice(0, 10);
+          (document.getElementById('ed-tags') as HTMLInputElement).value = (p.tags || []).join(', ');
+          (document.getElementById('ed-image') as HTMLInputElement).value = p.image || '/images/hero-band.jpg';
+          (document.getElementById('ed-preview-img') as HTMLImageElement).src = p.image || '/images/hero-band.jpg';
+          (document.getElementById('ed-excerpt') as HTMLTextAreaElement).value = p.excerpt || '';
+          (document.getElementById('ed-body') as HTMLTextAreaElement).value = Array.isArray(p.body) ? p.body.join('\n\n') : p.body || '';
+          (document.getElementById('ed-ctaLabel') as HTMLInputElement).value = p.ctaLabel || '';
+          (document.getElementById('ed-ctaUrl') as HTMLInputElement).value = p.ctaUrl || '';
+          document.getElementById('btn-delete-post')?.classList.remove('hidden');
+          const viewLive = document.getElementById('editor-view-live') as HTMLAnchorElement;
+          viewLive.href = `/news/${p.slug}`;
+          viewLive.classList.remove('hidden');
+        }
+
+        document.getElementById('btn-new-post')?.addEventListener('click', resetEditor);
+        document.getElementById('cms-post-search')?.addEventListener('input', renderPostsList);
+        document.getElementById('ed-image')?.addEventListener('input', (e) => {
+          (document.getElementById('ed-preview-img') as HTMLImageElement).src = (e.target as HTMLInputElement).value;
+        });
+
+        document.getElementById('ed-upload')?.addEventListener('change', async (e) => {
+          const input = e.target as HTMLInputElement;
+          const file = input.files?.[0];
+          if (!file) return;
+          const fd = new FormData();
+          fd.append('file', file);
+          toast('Uploading image...');
+          const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+          const json = await res.json();
+          if (res.ok && json.ok) {
+            (document.getElementById('ed-image') as HTMLInputElement).value = json.url;
+            (document.getElementById('ed-preview-img') as HTMLImageElement).src = json.url;
+            toast('Image uploaded!');
+          } else {
+            toast(json.error || 'Upload failed');
+          }
+          input.value = '';
+        });
+
+        document.getElementById('post-editor-form')?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const form = e.target as HTMLFormElement;
+          const fd = new FormData(form);
+          const payload = {
+            id: fd.get('id') || undefined,
+            title: fd.get('title'),
+            slug: fd.get('slug'),
+            category: fd.get('category'),
+            status: fd.get('status'),
+            isoDate: fd.get('isoDate'),
+            tags: fd.get('tags'),
+            image: fd.get('image'),
+            excerpt: fd.get('excerpt'),
+            body: fd.get('body'),
+            ctaLabel: fd.get('ctaLabel'),
+            ctaUrl: fd.get('ctaUrl'),
+          };
+          const res = await fetch('/api/admin/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json();
+          if (res.ok && json.ok) {
+            toast(`Saved "${json.post.title}"`);
+            await loadPosts();
+            populateEditor(json.post);
+          } else {
+            toast(json.error || 'Could not save post');
+          }
+        });
+
+        document.getElementById('btn-delete-post')?.addEventListener('click', async () => {
+          const id = (document.getElementById('ed-id') as HTMLInputElement).value;
+          if (!id || !confirm('Delete this dispatch permanently?')) return;
+          const res = await fetch(`/api/admin/posts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+          if (res.ok) {
+            toast('Dispatch deleted');
+            resetEditor();
+            loadPosts();
+          }
+        });
+
+        document.getElementById('btn-seed-posts')?.addEventListener('click', async () => {
+          toast('Seeding 20 Skid Row posts...');
+          const res = await fetch('/api/admin/seed', { method: 'POST' });
+          const json = await res.json();
+          if (res.ok && json.ok) {
+            toast(`Seeded ${json.seeded} posts!`);
+            loadPosts();
+            loadAnalytics();
+          } else {
+            toast(json.error || 'Seed failed');
+          }
+        });
+
+        // Initial load (only when authenticated dashboard DOM is mounted)
+        if (document.getElementById('panel-analytics')) {
+          resetEditor();
+          loadAnalytics(7);
+          loadLeads();
+          loadPosts();
+        }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,221 @@
+---
+export const prerender = true;
+import Layout from '../../layouts/Layout.astro';
+import Marquee from '../../components/Marquee.astro';
+import Icons from '../../components/Icons.astro';
+import { DISCOGRAPHY, type Album } from '../../data/discography';
+
+export function getStaticPaths() {
+  return DISCOGRAPHY.map((album) => ({
+    params: { slug: album.slug },
+    props: { album },
+  }));
+}
+
+interface Props {
+  album: Album;
+}
+
+const { album } = Astro.props;
+const related = DISCOGRAPHY.filter((a) => a.slug !== album.slug).slice(0, 4);
+---
+
+<Layout
+  title={`${album.title} (${album.year})`}
+  description={album.description}
+  image={album.cover}
+>
+  {album.slug === 'skid-row-1989' && (
+    <Marquee
+      items={[
+        'SKID ROW 1989',
+        '5X PLATINUM DEBUT ALBUM',
+        'RELEASED JANUARY 24, 1989',
+        '18 AND LIFE • YOUTH GONE WILD • I REMEMBER YOU',
+      ]}
+    />
+  )}
+
+  <section class="relative overflow-hidden border-b border-white/10 bg-obsidian pt-8 pb-16 sm:pt-14 sm:pb-20">
+    <div class="crimson-glow pointer-events-none absolute inset-0" />
+    <div class="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <a
+        href="/music"
+        class="font-mono-meta inline-flex items-center gap-2 text-xs tracking-widest text-ash uppercase transition-colors hover:text-crimson"
+      >
+        &larr; Back to Discography
+      </a>
+
+      <div class="mt-6 grid grid-cols-1 items-start gap-8 md:grid-cols-12">
+        <!-- Cover Artwork -->
+        <div class="md:col-span-5">
+          <div class="relative border border-white/15 bg-coal p-2 shadow-2xl">
+            <img
+              src={album.cover}
+              alt={album.title}
+              class="aspect-square w-full object-cover"
+            />
+            {album.badge && (
+              <span class="font-mono-meta absolute top-4 left-4 bg-crimson px-3 py-1 text-xs font-bold tracking-widest text-white uppercase">
+                {album.badge}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <!-- Album Metadata & Actions -->
+        <div class="md:col-span-7">
+          <div class="font-mono-meta flex items-center gap-3 text-xs tracking-[0.2em] text-crimson uppercase">
+            <span>{album.type}</span>
+            <span class="text-white/30">/</span>
+            <span class="text-ash">{album.year}</span>
+          </div>
+
+          <h1 class="font-display mt-2 text-4xl leading-none text-white uppercase sm:text-6xl">
+            {album.title}
+          </h1>
+          <div class="slash-divider mt-4 w-24" />
+
+          <p class="mt-5 text-base leading-relaxed text-chalk/90 sm:text-lg">
+            {album.description}
+          </p>
+
+          <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+            <a
+              href={album.listenUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-crimson w-full sm:w-auto sm:px-7"
+            >
+              <Icons name="play" class="h-5 w-5" />
+              Listen Now
+              <Icons name="external" class="h-4 w-4" />
+            </a>
+            <a
+              href="https://open.spotify.com/artist/4opTS86dN9uO313J9CE8xg"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-outline w-full sm:w-auto"
+            >
+              <Icons name="spotify" class="h-4 w-4 text-emerald-400" />
+              Spotify
+            </a>
+            <a
+              href="https://music.apple.com/us/artist/skid-row/163805"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-outline w-full sm:w-auto"
+            >
+              <Icons name="apple-music" class="h-4 w-4 text-rose-400" />
+              Apple Music
+            </a>
+          </div>
+
+          {album.credits && (
+            <div class="mt-8 border border-white/10 bg-coal p-5">
+              <h2 class="font-display text-xl text-white uppercase">Recording Credits</h2>
+              <ul class="mt-3 space-y-1.5 text-sm text-ash">
+                {album.credits.map((line) => (
+                  <li>{line}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <!-- Tracklist & Interactive Expandable Lyrics -->
+      {album.tracks && album.tracks.length > 0 && (
+        <div class="mt-12 border-t border-white/10 pt-10">
+          <div class="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <p class="font-mono-meta text-xs tracking-[0.22em] text-crimson uppercase">
+                Tracklist {album.tracks.some((t) => t.lyrics) ? '& Official Lyrics' : ''}
+              </p>
+              <h2 class="font-display mt-1 text-3xl text-white uppercase sm:text-4xl">
+                {album.tracks.length} {album.tracks.length === 1 ? 'Track' : 'Tracks'}
+              </h2>
+            </div>
+            {album.tracks.some((t) => t.lyrics) && (
+              <span class="font-mono-meta text-xs text-ash uppercase">
+                Tap any track to expand lyrics
+              </span>
+            )}
+          </div>
+
+          <div class="mt-6 divide-y divide-white/10 border border-white/12 bg-coal">
+            {album.tracks.map((track) => (
+              <div class="p-4 sm:px-6">
+                {track.lyrics ? (
+                  <details class="group">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-1">
+                      <div class="flex items-baseline gap-4">
+                        <span class="font-mono-meta w-6 text-xs font-bold text-crimson">
+                          {String(track.number).padStart(2, '0')}
+                        </span>
+                        <div>
+                          <span class="font-display text-xl text-white uppercase transition-colors group-hover:text-crimson sm:text-2xl">
+                            {track.title}
+                          </span>
+                          {track.writers && (
+                            <span class="font-mono-meta ml-2 hidden text-[11px] text-ash sm:inline">
+                              [{track.writers}]
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span class="font-mono-meta shrink-0 border border-white/20 px-2.5 py-1 text-[10px] font-bold tracking-wider text-chalk uppercase group-open:border-crimson group-open:bg-crimson group-open:text-white">
+                        Lyrics
+                      </span>
+                    </summary>
+                    <div class="mt-4 border-t border-white/10 pt-4 pl-0 sm:pl-10">
+                      {track.writers && (
+                        <p class="font-mono-meta mb-3 text-xs text-crimson uppercase">
+                          Written by: {track.writers}
+                        </p>
+                      )}
+                      <pre class="font-sans text-sm leading-relaxed whitespace-pre-wrap text-chalk/90 sm:text-base">{track.lyrics}</pre>
+                    </div>
+                  </details>
+                ) : (
+                  <div class="flex items-baseline gap-4 py-1">
+                    <span class="font-mono-meta w-6 text-xs font-bold text-crimson">
+                      {String(track.number).padStart(2, '0')}
+                    </span>
+                    <span class="font-display text-xl text-white uppercase sm:text-2xl">
+                      {track.title}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- More From the Vault -->
+      <div class="mt-14 border-t border-white/10 pt-10">
+        <h2 class="font-display text-3xl text-white uppercase">More From Skid Row</h2>
+        <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {related.map((item) => (
+            <a
+              href={`/music/${item.slug}`}
+              class="group border border-white/10 bg-coal p-2.5 transition-colors hover:border-crimson"
+            >
+              <img
+                src={item.cover}
+                alt={item.title}
+                loading="lazy"
+                class="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <p class="font-mono-meta mt-2 text-[10px] text-crimson uppercase">{item.year}</p>
+              <h3 class="font-display line-clamp-1 text-base text-white uppercase group-hover:text-crimson">
+                {item.title}
+              </h3>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

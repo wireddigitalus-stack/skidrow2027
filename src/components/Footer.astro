@@ -1,0 +1,128 @@
+---
+import { SITE } from '../data/site';
+import Icons from './Icons.astro';
+import MailingListForm from './MailingListForm.astro';
+
+interface Props {
+  hideMailingList?: boolean;
+}
+
+const { hideMailingList = false } = Astro.props;
+---
+
+{!hideMailingList && <MailingListForm compact />}
+
+<footer class="border-t border-white/10 bg-obsidian text-ash">
+  <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <div class="flex flex-col items-center justify-between gap-8 md:flex-row">
+      <!-- Logo & Tagline -->
+      <div class="flex flex-col items-center text-center md:items-start md:text-left">
+        <a href="/" aria-label="Skid Row Home">
+          <img
+            src="/images/skidrow-logo.avif"
+            alt="Skid Row"
+            width="160"
+            height="44"
+            loading="lazy"
+            class="h-10 w-auto"
+          />
+        </a>
+        <p class="font-mono-meta mt-2.5 text-xs tracking-widest text-ash uppercase">
+          {SITE.tagline}
+        </p>
+      </div>
+
+      <!-- Fixed Official Social & Streaming Bar -->
+      <div class="flex flex-wrap items-center justify-center gap-2.5">
+        {SITE.socials.map((s) => (
+          <a
+            href={s.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={s.name}
+            title={s.name}
+            class="flex h-11 w-11 items-center justify-center border border-white/15 bg-coal text-chalk transition-all hover:border-crimson hover:bg-crimson hover:text-white"
+          >
+            <Icons name={s.id} class="h-5 w-5" />
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Quick Links + Legal Bar -->
+    <div class="mt-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs sm:flex-row">
+      <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-mono-meta tracking-wider uppercase">
+        <a
+          href={SITE.storeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-crimson transition-colors hover:text-white"
+        >
+          Official Merch Store
+        </a>
+        <span class="text-white/25" aria-hidden="true">//</span>
+        <a
+          href={SITE.linktreeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-chalk/90 transition-colors hover:text-white"
+        >
+          Linktree
+        </a>
+        <span class="text-white/25" aria-hidden="true">//</span>
+        <a href="/legal" class="text-amber-400 transition-colors hover:text-white">
+          Legal &amp; Privacy Policy
+        </a>
+        <span class="text-white/25" aria-hidden="true">//</span>
+        <a href="/legal#credits" class="text-amber-400 transition-colors hover:text-white">
+          Credits
+        </a>
+        <span class="text-white/25" aria-hidden="true">//</span>
+        <a
+          href={`mailto:${SITE.contactEmail}`}
+          class="text-amber-400 transition-colors hover:text-white"
+        >
+          Contact
+        </a>
+      </div>
+
+      <p
+        id="sr-copy-trigger"
+        class="text-center text-xs text-ash/80 select-none sm:text-right"
+      >
+        &copy; 2026&ndash;2027 Skid Row Inc. All Rights Reserved.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Invisible backstage trigger: 5 rapid taps/clicks on copyright line (or Shift+Alt+S)
+  // No <a href> in DOM so neither casual visitors nor web crawlers discover the route.
+  const trigger = document.getElementById('sr-copy-trigger');
+  let taps = 0;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  function openBackstage() {
+    window.location.href = ['/', 'back', 'stage'].join('');
+  }
+
+  trigger?.addEventListener('click', () => {
+    taps += 1;
+    if (timer) clearTimeout(timer);
+    if (taps >= 5) {
+      taps = 0;
+      openBackstage();
+      return;
+    }
+    timer = setTimeout(() => {
+      taps = 0;
+    }, 2500);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.shiftKey && e.altKey && e.code === 'KeyS') {
+      openBackstage();
+    }
+  });
+</script>
