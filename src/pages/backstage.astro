@@ -889,7 +889,9 @@ const usingSupabase = isSupabaseConfigured();
         // Load Analytics + System
         async function loadAnalytics(days = currentDays) {
           currentDays = days;
-          const res = await fetch(`/api/admin/analytics?days=${days}`);
+          const res = await fetch(`/api/admin/analytics?days=${days}&_t=${Date.now()}`, {
+            cache: 'no-store',
+          });
           if (res.status === 401) return window.location.reload();
           const data = await res.json();
           const a = data.analytics;

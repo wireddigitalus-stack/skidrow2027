@@ -994,7 +994,10 @@ export async function getAnalyticsSummary(days = 7) {
     const country = (e.country || '').trim().toUpperCase();
     if (!country || country === 'LOCAL') continue;
 
-    let region = (e.region || '').trim().toUpperCase();
+    let region = (e.region || '')
+      .trim()
+      .toUpperCase()
+      .replace(/^[A-Z]{2}-/, '');
     const city = (e.city || '').trim();
     let lat = typeof e.latitude === 'number' && Number.isFinite(e.latitude) ? e.latitude : null;
     let lng = typeof e.longitude === 'number' && Number.isFinite(e.longitude) ? e.longitude : null;
