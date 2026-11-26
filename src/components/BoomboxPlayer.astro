@@ -20,40 +20,40 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
     <!-- Section Header -->
     <div class="flex flex-col items-center text-center">
       <div class="dymo-label">
-        <span class="dymo-text text-[10px] sm:text-xs">
+        <span class="dymo-text text-[9.5px] sm:text-xs">
           1989 – 2026 • ALL ERAS BOOMBOX MIX
         </span>
       </div>
       <h2
         class:list={[
-          'font-display mt-4 leading-none text-white uppercase',
-          compactHeading ? 'text-4xl sm:text-5xl' : 'text-4xl sm:text-6xl',
+          'font-display mt-3 leading-none text-white uppercase',
+          compactHeading ? 'text-3xl sm:text-5xl' : 'text-3xl sm:text-6xl',
         ]}
       >
         Crank Up <span class="text-crimson">Four Decades</span>
       </h2>
-      <p class="mt-2.5 max-w-xl text-sm text-ash sm:text-base">
+      <p class="mt-2 max-w-xl text-xs text-ash sm:text-base">
         Click the boombox chrome buttons, spin the cassette decks, slide the EQ, or switch eras—streaming straight from Skid Row's official YouTube vault.
       </p>
     </div>
 
-    <!-- Era Cassette Filter Strip -->
-    <div class="no-scrollbar mt-7 flex justify-start gap-2 overflow-x-auto pb-1 sm:justify-center">
+    <!-- Era Cassette Filter Grid (Stacked 1 + 2x2 on Mobile, Centered Row on Desktop) -->
+    <div class="mt-5 grid grid-cols-2 gap-1.5 sm:mt-7 sm:flex sm:flex-wrap sm:justify-center sm:gap-2">
       {BOOMBOX_ERAS.map((era, idx) => (
         <button
           type="button"
           data-bb-era={era.key}
           class:list={[
-            'bb-era-btn group flex min-h-11 shrink-0 flex-col items-start border px-3.5 py-1.5 text-left transition-all',
+            'bb-era-btn group flex min-h-11 flex-col justify-center border px-3 py-1.5 text-left transition-all sm:shrink-0 sm:px-3.5',
             idx === 0
-              ? 'border-crimson bg-crimson text-white shadow-[0_0_20px_rgba(226,28,33,0.4)]'
-              : 'border-white/15 bg-coal text-ash hover:border-crimson/70 hover:text-white',
+              ? 'col-span-2 items-center border-crimson bg-crimson text-center text-white shadow-[0_0_20px_rgba(226,28,33,0.4)] sm:col-span-1 sm:items-start sm:text-left'
+              : 'items-start border-white/15 bg-coal text-ash hover:border-crimson/70 hover:text-white',
           ]}
         >
-          <span class="font-mono-meta text-[11px] font-bold tracking-wider uppercase">
+          <span class="font-mono-meta text-[10px] font-bold tracking-wider uppercase sm:text-[11px]">
             {era.label}
           </span>
-          <span class="font-mono-meta text-[9px] tracking-widest opacity-80 uppercase">
+          <span class="font-mono-meta text-[8.5px] tracking-wider opacity-80 uppercase sm:text-[9px] sm:tracking-widest">
             {era.sub} · {era.deckHint}
           </span>
         </button>
@@ -62,8 +62,8 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
 
     <!-- ==================== INTERACTIVE 1980s BOOMBOX STAGE ==================== -->
     <div class="relative mx-auto mt-3 w-full max-w-4xl select-none">
-      <!-- Crop unused black air above the boombox handle without shifting any percentage-mapped overlays -->
-      <div class="overflow-hidden">
+      <!-- Full-bleed edge-to-edge boombox on narrow mobile + crop unused black air above handle -->
+      <div class="-mx-3 overflow-hidden sm:mx-0">
         <div
           class="bb-stage relative -mt-[17%] -mb-[4%] aspect-[3/2] w-full overflow-hidden bg-black"
           data-powered="true"
@@ -144,7 +144,7 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
 
         <!-- 3-DIGIT MECHANICAL COUNTER (Above Tape 2) -->
         <div
-          class="bb-counter pointer-events-none absolute flex items-center justify-center bg-black/85 font-mono-meta text-[8px] font-bold tracking-[0.22em] text-amber-300 shadow-inner sm:text-[10px]"
+          class="bb-counter pointer-events-none absolute flex items-center justify-center bg-black/85 font-mono-meta text-[6px] font-bold tracking-[0.12em] text-amber-300 shadow-inner sm:text-[10px] sm:tracking-[0.22em]"
           style="left: 44.1%; top: 57.5%; width: 4.5%; height: 2.8%;"
         >
           000
@@ -325,9 +325,9 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
         <button
           type="button"
           data-bb-act="play"
-          class="bb-start-pill absolute top-[68%] left-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 border border-crimson bg-black/88 px-4 py-2 font-display text-sm tracking-widest text-white uppercase shadow-[0_0_28px_rgba(226,28,33,0.75)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-crimson sm:px-5 sm:py-2.5 sm:text-base"
+          class="bb-start-pill absolute top-[68%] left-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 border border-crimson bg-black/90 px-3 py-1.5 font-display text-xs tracking-widest whitespace-nowrap text-white uppercase shadow-[0_0_24px_rgba(226,28,33,0.75)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-crimson sm:gap-2 sm:px-5 sm:py-2.5 sm:text-base"
         >
-          <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-crimson"></span>
+          <span class="h-2 w-2 animate-pulse rounded-full bg-crimson sm:h-2.5 sm:w-2.5"></span>
           Tap to Crank It Up
         </button>
 
@@ -339,21 +339,21 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
       <!-- ==================== LIVE 32-BAND SPECTRUM GRAPH & DIGITAL DECK ==================== -->
       <div class="mt-2 border border-white/15 bg-coal/95 shadow-2xl">
         <!-- High-Res Live 32-Band Canvas Visualizer -->
-        <div class="relative border-b border-white/10 bg-[#040406] px-3 pt-3 pb-2 sm:px-5">
-          <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center gap-2.5">
-              <span class="bb-live-dot h-2.5 w-2.5 rounded-full bg-ash"></span>
-              <span class="bb-status-text font-mono-meta text-[10px] font-bold tracking-[0.22em] text-ash uppercase">
+        <div class="relative border-b border-white/10 bg-[#040406] px-3 pt-2.5 pb-2 sm:px-5 sm:pt-3">
+          <div class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-2">
+              <span class="bb-live-dot h-2 w-2 shrink-0 rounded-full bg-ash sm:h-2.5 sm:w-2.5"></span>
+              <span class="bb-status-text truncate font-mono-meta text-[9px] font-bold tracking-[0.16em] text-ash uppercase sm:text-[10px] sm:tracking-[0.22em]">
                 Standby • Ready to Play
               </span>
             </div>
-            <div class="flex flex-wrap items-center gap-1.5">
+            <div class="grid grid-cols-4 gap-1 sm:flex sm:items-center sm:gap-1.5">
               {['89 RAW', 'SLAVE CRUNCH', 'ARENA LIVE', '2026 FIRE'].map((preset, idx) => (
                 <button
                   type="button"
                   data-bb-eq={preset}
                   class:list={[
-                    'bb-eq-btn border px-2 py-0.5 font-mono-meta text-[9px] font-bold tracking-wider uppercase transition-colors',
+                    'bb-eq-btn border px-1.5 py-1 text-center font-mono-meta text-[8px] font-bold tracking-wider uppercase transition-colors sm:px-2 sm:py-0.5 sm:text-[9px]',
                     idx === 3
                       ? 'border-cyan-400 bg-cyan-400/20 text-cyan-200'
                       : 'border-white/15 bg-obsidian text-ash hover:border-cyan-400/60 hover:text-white',
@@ -366,34 +366,34 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
           </div>
 
           <canvas
-            class="bb-main-spectrum block h-20 w-full sm:h-24"
+            class="bb-main-spectrum block h-14 w-full sm:h-24"
             width="880"
             height="110"
           ></canvas>
         </div>
 
         <!-- Now Playing Readout + Thumb-Friendly Mobile & Desktop Controls -->
-        <div class="grid grid-cols-1 items-center gap-4 p-4 sm:p-5 lg:grid-cols-12">
+        <div class="grid grid-cols-1 items-center gap-3.5 p-3.5 sm:gap-4 sm:p-5 lg:grid-cols-12">
           <!-- Track Info -->
-          <div class="flex items-center gap-3.5 lg:col-span-5">
+          <div class="flex items-center gap-3 lg:col-span-5">
             <img
-              class="bb-cover h-14 w-14 shrink-0 border border-white/20 object-cover sm:h-16 sm:w-16"
+              class="bb-cover h-12 w-12 shrink-0 border border-white/20 object-cover sm:h-16 sm:w-16"
               src={BOOMBOX_TRACKS[0].cover}
               alt={BOOMBOX_TRACKS[0].title}
             />
             <div class="min-w-0">
               <div class="flex items-center gap-2">
-                <span class="bb-era-badge font-mono-meta bg-crimson/20 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-crimson uppercase">
+                <span class="bb-era-badge font-mono-meta bg-crimson/20 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-crimson uppercase sm:text-[10px]">
                   {BOOMBOX_TRACKS[0].eraLabel}
                 </span>
-                <span class="bb-deck-badge font-mono-meta text-[10px] text-cyan-300 uppercase">
+                <span class="bb-deck-badge font-mono-meta text-[9px] text-cyan-300 uppercase sm:text-[10px]">
                   TAPE 1
                 </span>
               </div>
-              <h3 class="bb-track-title font-display mt-1 truncate text-xl text-white uppercase sm:text-2xl">
+              <h3 class="bb-track-title font-display mt-0.5 truncate text-lg text-white uppercase sm:mt-1 sm:text-2xl">
                 {BOOMBOX_TRACKS[0].title}
               </h3>
-              <p class="bb-track-album truncate font-mono-meta text-[11px] text-ash">
+              <p class="bb-track-album truncate font-mono-meta text-[10px] text-ash sm:text-[11px]">
                 {BOOMBOX_TRACKS[0].album} ({BOOMBOX_TRACKS[0].year})
               </p>
             </div>
@@ -401,12 +401,12 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
 
           <!-- Tactile Transport Controls + Scrub Progress -->
           <div class="flex flex-col gap-2.5 lg:col-span-4">
-            <div class="flex items-center justify-center gap-2">
+            <div class="grid grid-cols-[44px_44px_1fr_44px_44px] items-center gap-1.5 sm:flex sm:items-center sm:justify-center sm:gap-2">
               <button
                 type="button"
                 data-bb-act="shuffle"
                 aria-label="Shuffle"
-                class="bb-btn-shuffle flex h-11 w-11 items-center justify-center border border-white/15 bg-obsidian font-mono-meta text-xs text-ash transition-colors hover:border-cyan-400 hover:text-cyan-300"
+                class="bb-btn-shuffle flex h-11 w-11 items-center justify-center border border-white/15 bg-obsidian font-mono-meta text-[10px] text-ash transition-colors hover:border-cyan-400 hover:text-cyan-300 sm:text-xs"
                 title="Toggle Shuffle Mix"
               >
                 SHF
@@ -423,7 +423,7 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
                 type="button"
                 data-bb-act="play"
                 aria-label="Play or Pause"
-                class="bb-btn-play flex h-12 min-w-28 items-center justify-center gap-1.5 border border-crimson bg-crimson px-4 font-display text-base tracking-wider text-white uppercase shadow-[0_0_20px_rgba(226,28,33,0.45)] transition-all hover:bg-crimson-bright active:scale-95"
+                class="bb-btn-play flex h-11 w-full items-center justify-center gap-1.5 border border-crimson bg-crimson px-4 font-display text-base tracking-wider text-white uppercase shadow-[0_0_20px_rgba(226,28,33,0.45)] transition-all hover:bg-crimson-bright active:scale-95 sm:h-12 sm:w-auto sm:min-w-28"
               >
                 <Icons name="play" class="h-4 w-4" />
                 <span class="bb-play-label">Play</span>
