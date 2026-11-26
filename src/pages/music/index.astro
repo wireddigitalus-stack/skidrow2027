@@ -4,15 +4,18 @@ import Layout from '../../layouts/Layout.astro';
 import Icons from '../../components/Icons.astro';
 import BoomboxPlayer from '../../components/BoomboxPlayer.astro';
 import { DISCOGRAPHY } from '../../data/discography';
+import { buildAlbumSchema } from '../../lib/seo';
 
 const studioCount = DISCOGRAPHY.filter((a) => a.type === 'Studio').length;
 const singleEpCount = DISCOGRAPHY.filter((a) => a.type === 'Single' || a.type === 'EP').length;
 const liveCompCount = DISCOGRAPHY.filter((a) => a.type === 'Live' || a.type === 'Compilation').length;
+const musicSchemas = DISCOGRAPHY.map(buildAlbumSchema);
 ---
 
 <Layout
   title="Music & Discography"
   description="Complete Skid Row discography from the 1989 debut to Won't Get Fooled Again (2026). Spin the 1980s All-Eras Boombox, stream albums, read tracklists, credits, and full lyrics."
+  jsonLd={musicSchemas}
 >
   <BoomboxPlayer compactHeading />
 

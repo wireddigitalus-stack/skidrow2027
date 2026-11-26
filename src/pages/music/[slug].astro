@@ -4,6 +4,7 @@ import Layout from '../../layouts/Layout.astro';
 import Marquee from '../../components/Marquee.astro';
 import Icons from '../../components/Icons.astro';
 import { DISCOGRAPHY, type Album } from '../../data/discography';
+import { buildAlbumSchema } from '../../lib/seo';
 
 export function getStaticPaths() {
   return DISCOGRAPHY.map((album) => ({
@@ -24,6 +25,9 @@ const related = DISCOGRAPHY.filter((a) => a.slug !== album.slug).slice(0, 4);
   title={`${album.title} (${album.year})`}
   description={album.description}
   image={album.cover}
+  imageAlt={`${album.title} (${album.year}) — Skid Row`}
+  ogType="music.album"
+  jsonLd={buildAlbumSchema(album)}
 >
   {album.slug === 'skid-row-1989' && (
     <Marquee

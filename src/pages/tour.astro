@@ -4,16 +4,20 @@ import Layout from '../layouts/Layout.astro';
 import Icons from '../components/Icons.astro';
 import { TOUR_DATES_2027 } from '../data/tour';
 import { SITE } from '../data/site';
+import { SITE_FAQS, buildTourEventsSchema, buildFaqSchema } from '../lib/seo';
 
 const totalShows = TOUR_DATES_2027.length;
 const headlineCount = TOUR_DATES_2027.filter((d) => d.kind === 'Headline').length;
 const festivalCount = TOUR_DATES_2027.filter((d) => d.kind === 'Festival').length;
 const canadaCount = TOUR_DATES_2027.filter((d) => d.country === 'CA').length;
+const tourFaqs = [SITE_FAQS[2], SITE_FAQS[0], SITE_FAQS[4]];
+const tourSchemas = [...buildTourEventsSchema(), buildFaqSchema(tourFaqs)];
 ---
 
 <Layout
   title="2027 Tour Dates"
   description="Official Skid Row 2027 North American tour dates, festival appearances (Welcome to Rockville, Sonic Temple), and ticket links."
+  jsonLd={tourSchemas}
 >
   <section class="relative overflow-hidden border-b border-white/10 bg-obsidian pt-10 pb-14 sm:pt-16 sm:pb-20">
     <!-- Subtle Skid Row Shield Watermark -->
@@ -182,6 +186,29 @@ const canadaCount = TOUR_DATES_2027.filter((d) => d.country === 'CA').length;
           >
             Request City
           </a>
+        </div>
+      </div>
+
+      <!-- 2027 Tour FAQ (GEO / Fan Answers) -->
+      <div class="mt-12 border-t border-white/10 pt-10">
+        <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+          Concert Info
+        </p>
+        <h2 class="font-display mt-1 text-3xl text-white uppercase sm:text-4xl">
+          2027 Tour FAQ
+        </h2>
+        <div class="mt-5 divide-y divide-white/10 border border-white/15 bg-coal">
+          {tourFaqs.map((item, idx) => (
+            <details class="group p-4 sm:px-6 sm:py-5" open={idx === 0}>
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-lg tracking-wide text-white uppercase sm:text-xl">
+                <span>{item.q}</span>
+                <span class="font-mono-meta shrink-0 text-lg text-crimson transition-transform group-open:rotate-45">+</span>
+              </summary>
+              <p class="mt-3 text-sm leading-relaxed text-chalk/85 sm:text-base">
+                {item.a}
+              </p>
+            </details>
+          ))}
         </div>
       </div>
     </div>

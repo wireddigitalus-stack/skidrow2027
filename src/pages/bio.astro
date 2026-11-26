@@ -9,11 +9,15 @@ import {
   TIMELINE,
   ARCHIVE_PHOTOS,
 } from '../data/bio';
+import { SITE_FAQS, buildMusicGroupSchema, buildFaqSchema } from '../lib/seo';
+
+const bioSchemas = [buildMusicGroupSchema(), buildFaqSchema(SITE_FAQS)];
 ---
 
 <Layout
   title="Bio"
   description="The first rebellion started in 1986. Forty years later, Skid Row — Rachel Bolan, Snake Sabo, Scotti Hill, Rob Hammersmith, and Justin Sargent — is still bringing the fire."
+  jsonLd={bioSchemas}
 >
   <section class="relative overflow-hidden border-b border-white/10 bg-obsidian pt-10 pb-14 sm:pt-16 sm:pb-20">
     <div class="crimson-glow pointer-events-none absolute inset-0" />
@@ -138,6 +142,29 @@ import {
                 class="aspect-square h-full w-full object-cover transition-transform duration-500 hover:scale-105"
               />
             </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Official Skid Row FAQ (GEO / Fan Quick Facts) -->
+      <div class="mt-16 border-t border-white/10 pt-12">
+        <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
+          Official Facts
+        </p>
+        <h2 class="font-display mt-1 text-4xl text-white uppercase sm:text-5xl">
+          Skid Row FAQ
+        </h2>
+        <div class="mt-6 divide-y divide-white/10 border border-white/15 bg-coal">
+          {SITE_FAQS.map((item, idx) => (
+            <details class="group p-4 sm:px-6 sm:py-5" open={idx === 0}>
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-lg tracking-wide text-white uppercase sm:text-xl">
+                <span>{item.q}</span>
+                <span class="font-mono-meta shrink-0 text-lg text-crimson transition-transform group-open:rotate-45">+</span>
+              </summary>
+              <p class="mt-3 text-sm leading-relaxed text-chalk/85 sm:text-base">
+                {item.a}
+              </p>
+            </details>
           ))}
         </div>
       </div>

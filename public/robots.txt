@@ -1,4 +1,42 @@
+# Skid Row Official Website — Search & AI Retrieval Crawler Policy
 User-agent: *
 Allow: /
 Disallow: /backstage
 Disallow: /api/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /backstage
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /backstage
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /backstage
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /backstage
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /backstage
+Disallow: /api/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /backstage
+Disallow: /api/
+
+User-agent: Applebot
+Allow: /
+Disallow: /backstage
+Disallow: /api/
+
+Sitemap: https://www.skidrow.com/sitemap.xml

@@ -4,22 +4,39 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import BottomBar from '../components/BottomBar.astro';
 import Telemetry from '../components/Telemetry.astro';
+import { absUrl, CANONICAL_BASE } from '../lib/seo';
 
 interface Props {
   title: string;
   description?: string;
   image?: string;
+  imageAlt?: string;
+  ogType?: 'website' | 'article' | 'music.album';
+  publishedTime?: string;
+  jsonLd?: Record<string, any> | Array<Record<string, any>>;
   hideFooterMailingList?: boolean;
 }
 
 const {
   title,
-  description = 'Official website of Skid Row. 2027 North American tour dates, new single "Won\'t Get Fooled Again", full discography, official videos, band bio, and latest news.',
-  image = '/images/hero-band.jpg',
+  description = 'Official website of Skid Row. 2027 North American tour dates, new single "Won\'t Get Fooled Again" featuring Justin Sargent, interactive 1980s All-Eras Boombox, full discography, official videos, band bio, and news.',
+  image = '/images/og-skidrow-2027.jpg',
+  imageAlt = 'Skid Row — 40 Years of Rebellion, Back on Stage in 2027',
+  ogType = 'website',
+  publishedTime,
+  jsonLd,
   hideFooterMailingList = false,
 } = Astro.props;
 
-const pageTitle = title === 'Skid Row' ? 'Skid Row | Official Site — 2027 Tour & New Music' : `${title} | Skid Row`;
+const pageTitle =
+  title === 'Skid Row'
+    ? 'Skid Row | Official Site — 2027 Tour, New Music & Boombox'
+    : `${title} | Skid Row`;
+
+const cleanPath = Astro.url.pathname === '/' ? '/' : Astro.url.pathname.replace(/\/+$/, '');
+const canonicalUrl = `${CANONICAL_BASE}${cleanPath === '/' ? '' : cleanPath}`;
+const absoluteImage = absUrl(image);
+const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 ---
 
 <!doctype html>
@@ -30,16 +47,41 @@ const pageTitle = title === 'Skid Row' ? 'Skid Row | Official Site — 2027 Tour
     <meta name="theme-color" content="#050505" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="application/rss+xml" title="Skid Row Official News" href="/rss.xml" />
 
-    <!-- OpenGraph / Social -->
-    <meta property="og:type" content="website" />
+    <!-- OpenGraph / Facebook / iMessage / Discord -->
+    <meta property="og:site_name" content="Skid Row" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonicalUrl} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={image} />
+    <meta property="og:image" content={absoluteImage} />
+    <meta property="og:image:secure_url" content={absoluteImage} />
+    {image === '/images/og-skidrow-2027.jpg' && (
+      <>
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+      </>
+    )}
+    <meta property="og:image:alt" content={imageAlt} />
+    {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+
+    <!-- Twitter / X Large Summary Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@OfficialSkidRow" />
+    <meta name="twitter:creator" content="@OfficialSkidRow" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={image} />
+    <meta name="twitter:image" content={absoluteImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
+
+    <!-- Structured Data (Schema.org JSON-LD for Google Rich Results & AI Engines) -->
+    {schemas.map((schema) => (
+      <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+    ))}
 
     <!-- Fonts: Anton (Display), Barlow (UI/Body), Space Mono (Dates/Meta) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

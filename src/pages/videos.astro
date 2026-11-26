@@ -5,6 +5,7 @@ import YouTubeFacade from '../components/YouTubeFacade.astro';
 import Icons from '../components/Icons.astro';
 import { VIDEOS } from '../data/videos';
 import { SITE } from '../data/site';
+import { buildVideosSchema } from '../lib/seo';
 
 const featured = VIDEOS.find((v) => v.featured) ?? VIDEOS[0];
 const rest = VIDEOS.filter((v) => v.id !== featured.id);
@@ -22,6 +23,7 @@ const categories = [
 <Layout
   title="Videos"
   description="Watch official Skid Row music videos, Live in London concert clips, and lyric videos from 2022 to 2026 including Won't Get Fooled Again, Resurrected, Time Bomb, Tear It Down, and The Gang's All Here."
+  jsonLd={buildVideosSchema()}
 >
   <section class="relative overflow-hidden border-b border-white/10 pt-10 pb-12 sm:pt-16 sm:pb-16">
     <div class="crimson-glow pointer-events-none absolute inset-0" />

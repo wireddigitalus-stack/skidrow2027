@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import Icons from '../../components/Icons.astro';
 import { listPosts } from '../../lib/db';
+import { buildNewsArticleSchema } from '../../lib/seo';
 
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
@@ -19,7 +20,15 @@ const nextPost = allPosts[index - 1] ?? null;
 const isExternalCta = post.ctaUrl?.startsWith('http');
 ---
 
-<Layout title={post.title} description={post.excerpt} image={post.image}>
+<Layout
+  title={post.title}
+  description={post.excerpt}
+  image={post.image}
+  imageAlt={post.title}
+  ogType="article"
+  publishedTime={`${post.isoDate}T12:00:00Z`}
+  jsonLd={buildNewsArticleSchema(post)}
+>
   <article class="border-b border-white/10 bg-obsidian pt-8 pb-16 sm:pt-14 sm:pb-20">
     <div class="mx-auto max-w-3xl px-4 sm:px-6">
       <a

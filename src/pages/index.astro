@@ -7,6 +7,11 @@ import Icons from '../components/Icons.astro';
 import { TOUR_DATES_2027 } from '../data/tour';
 import { DISCOGRAPHY } from '../data/discography';
 import { listPosts } from '../lib/db';
+import {
+  buildWebsiteSchema,
+  buildMusicGroupSchema,
+  buildTourEventsSchema,
+} from '../lib/seo';
 
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
@@ -15,9 +20,14 @@ const NEWS_POSTS = await listPosts(false);
 const latestNews = NEWS_POSTS.slice(0, 3);
 const featuredAlbums = DISCOGRAPHY.slice(0, 6);
 const latestSingle = DISCOGRAPHY[0];
+const homeSchemas = [
+  buildWebsiteSchema(),
+  buildMusicGroupSchema(),
+  ...buildTourEventsSchema().slice(0, 6),
+];
 ---
 
-<Layout title="Skid Row">
+<Layout title="Skid Row" jsonLd={homeSchemas}>
   <!-- HERO: Mobile-First Band Showcase With Full Headroom -->
   <section class="relative isolate overflow-hidden bg-obsidian">
     <!-- Upper Band Photo Stage (matches 1.67:1 photo ratio on mobile so all 5 band members stay fully visible) -->
