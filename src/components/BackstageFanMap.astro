@@ -120,16 +120,16 @@
         </button>
 
         <div id="globe-region-controls" class="flex flex-wrap items-center gap-1">
-          <button type="button" data-preset="usa" class="geo-preset-btn border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] text-chalk uppercase hover:border-crimson hover:text-white">USA</button>
+          <button type="button" data-preset="usa" class="geo-preset-btn border border-crimson/60 bg-crimson/15 px-2 py-1 font-mono-meta text-[10px] font-bold text-white uppercase hover:bg-crimson">USA</button>
           <button type="button" data-preset="europe" class="geo-preset-btn border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] text-chalk uppercase hover:border-crimson hover:text-white">Europe</button>
           <button type="button" data-preset="latam" class="geo-preset-btn border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] text-chalk uppercase hover:border-crimson hover:text-white">LATAM</button>
           <button type="button" data-preset="apac" class="geo-preset-btn border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] text-chalk uppercase hover:border-crimson hover:text-white">APAC</button>
           <button
             type="button"
             id="toggle-globe-spin"
-            class="border border-crimson/60 bg-crimson/15 px-2 py-1 font-mono-meta text-[10px] font-bold text-crimson uppercase hover:bg-crimson hover:text-white"
+            class="border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] font-bold text-ash uppercase hover:border-crimson hover:text-white"
           >
-            Spin: ON
+            Spin: OFF
           </button>
         </div>
       </div>
@@ -177,34 +177,6 @@
         <div id="selected-tour-reach" class="mt-1 border-t border-white/10 pt-1.5 font-mono-meta text-[10px] text-amber-200"></div>
       </div>
 
-      <!-- Zoom Controls (Bottom Right of Canvas) -->
-      <div id="map-zoom-controls" class="absolute right-3 bottom-14 z-20 flex flex-col gap-1">
-        <button
-          type="button"
-          id="map-zoom-in"
-          title="Zoom in"
-          class="flex h-8 w-8 items-center justify-center border border-white/20 bg-obsidian/90 font-mono-meta text-sm font-bold text-white backdrop-blur hover:border-crimson hover:bg-crimson"
-        >
-          +
-        </button>
-        <button
-          type="button"
-          id="map-zoom-out"
-          title="Zoom out"
-          class="flex h-8 w-8 items-center justify-center border border-white/20 bg-obsidian/90 font-mono-meta text-sm font-bold text-white backdrop-blur hover:border-crimson hover:bg-crimson"
-        >
-          &minus;
-        </button>
-        <button
-          type="button"
-          id="map-zoom-reset"
-          title="Reset camera"
-          class="flex h-8 w-8 items-center justify-center border border-white/20 bg-obsidian/90 font-mono-meta text-[10px] font-bold text-ash backdrop-blur hover:border-crimson hover:text-white"
-        >
-          1x
-        </button>
-      </div>
-
       <!-- Interactive HiDPI Canvas -->
       <div id="fan-map-stage" class="relative h-[370px] w-full select-none sm:h-[460px] lg:h-[510px]">
         <canvas
@@ -212,6 +184,89 @@
           class="h-full w-full cursor-grab active:cursor-grabbing"
           aria-label="Interactive Skid Row Worldwide and USA Fan Map"
         ></canvas>
+
+        <!-- Easy Tactile Icon Controls (Anchored Inside Bottom-Right of Canvas) -->
+        <div id="map-zoom-controls" class="absolute right-3 bottom-3 z-20 flex flex-col items-end gap-1.5">
+          <!-- Globe-only Rotation & Auto-Spin Icons -->
+          <div id="globe-icon-controls" class="flex flex-col items-end gap-1.5">
+            <button
+              type="button"
+              id="icon-globe-spin"
+              title="Start / Pause Globe Auto-Spin"
+              aria-label="Toggle Globe Auto-Spin"
+              class="flex h-9 w-9 items-center justify-center border border-white/20 bg-obsidian/92 text-chalk backdrop-blur transition-colors hover:border-crimson hover:bg-crimson hover:text-white"
+            >
+              <svg id="icon-spin-play" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5.14v14l11-7-11-7z" />
+              </svg>
+              <svg id="icon-spin-pause" class="hidden h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
+              </svg>
+            </button>
+            <div class="flex gap-1">
+              <button
+                type="button"
+                id="globe-rot-left"
+                title="Rotate Globe West"
+                aria-label="Rotate Globe West"
+                class="flex h-8 w-8 items-center justify-center border border-white/20 bg-obsidian/92 text-chalk backdrop-blur transition-colors hover:border-crimson hover:bg-crimson hover:text-white"
+              >
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                id="globe-rot-right"
+                title="Rotate Globe East"
+                aria-label="Rotate Globe East"
+                class="flex h-8 w-8 items-center justify-center border border-white/20 bg-obsidian/92 text-chalk backdrop-blur transition-colors hover:border-crimson hover:bg-crimson hover:text-white"
+              >
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Zoom & Center-on-USA Icons -->
+          <div class="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              id="map-zoom-in"
+              title="Zoom In"
+              aria-label="Zoom In"
+              class="flex h-9 w-9 items-center justify-center border border-white/20 bg-obsidian/92 text-white backdrop-blur transition-colors hover:border-crimson hover:bg-crimson"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              id="map-zoom-out"
+              title="Zoom Out"
+              aria-label="Zoom Out"
+              class="flex h-9 w-9 items-center justify-center border border-white/20 bg-obsidian/92 text-white backdrop-blur transition-colors hover:border-crimson hover:bg-crimson"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              id="map-zoom-reset"
+              title="Center on USA & Reset Zoom"
+              aria-label="Center on USA"
+              class="flex h-9 w-9 items-center justify-center border border-white/20 bg-obsidian/92 text-crimson backdrop-blur transition-colors hover:border-crimson hover:bg-crimson hover:text-white"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="6" />
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
         <!-- Hover HUD Tooltip -->
         <div
@@ -246,7 +301,7 @@
     </div>
 
     <!-- Right-Side Geo Intelligence Leaderboard -->
-    <div class="flex flex-col bg-coal lg:col-span-4">
+    <div class="flex flex-col bg-coal lg:col-span-4 lg:max-h-[552px]">
       <!-- Sub-tabs -->
       <div class="grid grid-cols-4 border-b border-white/10 bg-obsidian/60">
         <button
@@ -291,7 +346,7 @@
       </div>
 
       <!-- Scrollable List Container -->
-      <div id="geo-list-container" class="h-[340px] flex-1 overflow-y-auto divide-y divide-white/8 lg:h-[410px]">
+      <div id="geo-list-container" class="h-[340px] max-h-[340px] overflow-y-auto divide-y divide-white/8 lg:h-[420px] lg:max-h-[420px]">
         <div class="p-4 font-mono-meta text-xs text-ash">Loading geo breakdown…</div>
       </div>
 
@@ -439,15 +494,15 @@
     let showTourOverlay = true;
     let showTourRoutes = false;
     let selectedTourId: string | null = null;
-    let autoSpin = true;
+    let autoSpin = false;
     let selectedStateCode: string | null = null;
     let focusedCityKey: string | null = null;
     let searchQuery = '';
 
-    // Globe rotation & zoom
-    let rotation: [number, number, number] = [96, -34, 0]; // Starts centered on USA!
+    // Globe rotation & zoom (USA dead-center, steady by default)
+    let rotation: [number, number, number] = [97, -38, 0];
     let targetRotation: [number, number] | null = null;
-    let globeZoom = 1.08;
+    let globeZoom = 1.15;
     let flatZoom = 1.0;
 
     // Pointer interaction
@@ -1358,6 +1413,10 @@
       globeControls?.classList.toggle('hidden', mode !== 'globe');
       globeControls?.classList.toggle('flex', mode === 'globe');
 
+      const globeIcons = document.getElementById('globe-icon-controls');
+      globeIcons?.classList.toggle('hidden', mode !== 'globe');
+      globeIcons?.classList.toggle('flex', mode === 'globe');
+
       const hint = document.getElementById('map-interaction-hint');
       if (hint) {
         hint.textContent =
@@ -1381,6 +1440,19 @@
         btn.classList.toggle('text-ash', !val);
         btn.classList.toggle('border-white/15', !val);
       }
+      const iconBtn = document.getElementById('icon-globe-spin');
+      const playSvg = document.getElementById('icon-spin-play');
+      const pauseSvg = document.getElementById('icon-spin-pause');
+      if (iconBtn) {
+        iconBtn.classList.toggle('border-crimson', val);
+        iconBtn.classList.toggle('bg-crimson', val);
+        iconBtn.classList.toggle('text-white', val);
+        iconBtn.classList.toggle('border-white/20', !val);
+        iconBtn.classList.toggle('bg-obsidian/92', !val);
+        iconBtn.classList.toggle('text-chalk', !val);
+      }
+      playSvg?.classList.toggle('hidden', val);
+      pauseSvg?.classList.toggle('hidden', !val);
     }
 
     function setGeoTab(tab: GeoTab) {
@@ -1585,6 +1657,15 @@
     });
 
     document.getElementById('toggle-globe-spin')?.addEventListener('click', () => setAutoSpin(!autoSpin));
+    document.getElementById('icon-globe-spin')?.addEventListener('click', () => setAutoSpin(!autoSpin));
+    document.getElementById('globe-rot-left')?.addEventListener('click', () => {
+      setAutoSpin(false);
+      targetRotation = [rotation[0] + 38, rotation[1]];
+    });
+    document.getElementById('globe-rot-right')?.addEventListener('click', () => {
+      setAutoSpin(false);
+      targetRotation = [rotation[0] - 38, rotation[1]];
+    });
 
     document.getElementById('toggle-tour-overlay')?.addEventListener('click', (e) => {
       showTourOverlay = !showTourOverlay;
@@ -1627,9 +1708,10 @@
       else flatZoom = Math.max(1.0, flatZoom / 1.2);
     });
     document.getElementById('map-zoom-reset')?.addEventListener('click', () => {
-      globeZoom = 1.08;
+      globeZoom = 1.15;
       flatZoom = 1.0;
-      targetRotation = [96, -34];
+      setAutoSpin(false);
+      targetRotation = [97, -38];
       selectUsState(null);
       selectTourStop(null);
       focusedCityKey = null;

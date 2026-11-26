@@ -147,6 +147,7 @@ const CITY_FALLBACK: Record<string, { lat: number; lng: number; region?: string 
   'boston': { lat: 42.3601, lng: -71.0589, region: 'MA' },
   'atlanta': { lat: 33.749, lng: -84.388, region: 'GA' },
   'charlotte': { lat: 35.2271, lng: -80.8431, region: 'NC' },
+  'bristol': { lat: 36.5951, lng: -82.1887, region: 'VA' },
   'minneapolis': { lat: 44.9778, lng: -93.265, region: 'MN' },
   'london': { lat: 51.5072, lng: -0.1276 },
   'toronto': { lat: 43.6532, lng: -79.3832, region: 'ON' },
