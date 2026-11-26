@@ -9,11 +9,12 @@ import { SITE } from '../data/site';
 const featured = VIDEOS.find((v) => v.featured) ?? VIDEOS[0];
 const rest = VIDEOS.filter((v) => v.id !== featured.id);
 const youtubeChannel = SITE.socials.find((s) => s.id === 'youtube')?.url ?? '#';
+const categories = ['All', 'Official Video', 'Live in London', 'Lyric Video', 'Feature'] as const;
 ---
 
 <Layout
   title="Videos"
-  description="Watch official Skid Row music videos including Won't Get Fooled Again, The Gang's All Here, 18 and Life, Youth Gone Wild, I Remember You, and Slave to the Grind."
+  description="Watch official Skid Row music videos, Live in London concert clips, and lyric videos from 2022 to 2026 including Won't Get Fooled Again, Resurrected, Time Bomb, Tear It Down, and The Gang's All Here."
 >
   <section class="relative overflow-hidden border-b border-white/10 pt-10 pb-12 sm:pt-16 sm:pb-16">
     <div class="crimson-glow pointer-events-none absolute inset-0" />
@@ -21,7 +22,7 @@ const youtubeChannel = SITE.socials.find((s) => s.id === 'youtube')?.url ?? '#';
       <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
-            Official Visuals
+            Official Channel • 2022 – 2026
           </p>
           <h1 class="font-display mt-1 text-5xl leading-none text-white uppercase sm:text-7xl">
             Videos
@@ -76,20 +77,41 @@ const youtubeChannel = SITE.socials.find((s) => s.id === 'youtube')?.url ?? '#';
         </div>
       </div>
 
-      <!-- Full Video Vault -->
+      <!-- Video Vault With Category Filters -->
       <div class="mt-12">
-        <div class="mb-6 flex items-center justify-between">
-          <h2 class="font-display text-3xl text-white uppercase sm:text-4xl">
-            Video Vault
-          </h2>
-          <span class="font-mono-meta text-xs text-ash uppercase">
-            {rest.length} Official Videos
-          </span>
+        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <h2 class="font-display text-3xl text-white uppercase sm:text-4xl">
+              Modern Era Vault
+            </h2>
+            <p class="font-mono-meta mt-1 text-xs text-ash uppercase">
+              Music videos, Live in London &amp; lyric videos (2022–2026)
+            </p>
+          </div>
+          <div class="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+            {categories.map((cat, idx) => (
+              <button
+                type="button"
+                data-vcat={cat}
+                class:list={[
+                  'video-filter-btn min-h-10 shrink-0 border px-3.5 font-mono-meta text-xs font-bold tracking-wider uppercase transition-colors',
+                  idx === 0
+                    ? 'border-crimson bg-crimson text-white'
+                    : 'border-white/20 bg-coal text-ash hover:border-crimson hover:text-white',
+                ]}
+              >
+                {cat === 'All' ? `All (${rest.length})` : cat}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {rest.map((video) => (
-            <article class="flex flex-col border border-white/10 bg-coal transition-colors hover:border-crimson/60">
+            <article
+              class="video-card flex flex-col border border-white/10 bg-coal transition-colors hover:border-crimson/60"
+              data-category={video.category}
+            >
               <YouTubeFacade
                 videoId={video.id}
                 title={video.title}
@@ -114,3 +136,27 @@ const youtubeChannel = SITE.socials.find((s) => s.id === 'youtube')?.url ?? '#';
     </div>
   </section>
 </Layout>
+
+<script>
+  const btns = document.querySelectorAll<HTMLButtonElement>('.video-filter-btn');
+  const cards = document.querySelectorAll<HTMLElement>('.video-card');
+
+  btns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.vcat || 'All';
+      btns.forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle('bg-crimson', active);
+        b.classList.toggle('border-crimson', active);
+        b.classList.toggle('text-white', active);
+        b.classList.toggle('bg-coal', !active);
+        b.classList.toggle('border-white/20', !active);
+        b.classList.toggle('text-ash', !active);
+      });
+      cards.forEach((c) => {
+        const show = cat === 'All' || c.dataset.category === cat;
+        c.classList.toggle('hidden', !show);
+      });
+    });
+  });
+</script>
