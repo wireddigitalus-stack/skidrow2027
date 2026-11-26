@@ -9,7 +9,13 @@ import { SITE } from '../data/site';
 const featured = VIDEOS.find((v) => v.featured) ?? VIDEOS[0];
 const rest = VIDEOS.filter((v) => v.id !== featured.id);
 const youtubeChannel = SITE.socials.find((s) => s.id === 'youtube')?.url ?? '#';
-const categories = ['All', 'Official Video', 'Live in London', 'Lyric Video', 'Feature'] as const;
+const categories = [
+  { value: 'All', label: `All (${rest.length})` },
+  { value: 'Official Video', label: 'Official Videos' },
+  { value: 'Live in London', label: 'Live in London' },
+  { value: 'Lyric Video', label: 'Lyric Videos' },
+  { value: 'Feature', label: 'Features' },
+] as const;
 ---
 
 <Layout
@@ -92,7 +98,7 @@ const categories = ['All', 'Official Video', 'Live in London', 'Lyric Video', 'F
             {categories.map((cat, idx) => (
               <button
                 type="button"
-                data-vcat={cat}
+                data-vcat={cat.value}
                 class:list={[
                   'video-filter-btn min-h-10 shrink-0 border px-3.5 font-mono-meta text-xs font-bold tracking-wider uppercase transition-colors',
                   idx === 0
@@ -100,7 +106,7 @@ const categories = ['All', 'Official Video', 'Live in London', 'Lyric Video', 'F
                     : 'border-white/20 bg-coal text-ash hover:border-crimson hover:text-white',
                 ]}
               >
-                {cat === 'All' ? `All (${rest.length})` : cat}
+                {cat.label}
               </button>
             ))}
           </div>
