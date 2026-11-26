@@ -103,8 +103,8 @@ const homeSchemas = [
   <!-- UPCOMING 2027 TOUR DATES (Native, Fast, Zero-Iframe) -->
   <section class="relative border-b border-white/10 bg-obsidian py-12 sm:py-16 lg:py-20">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
+      <div class="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:items-end sm:text-left">
+        <div class="flex flex-col items-center sm:items-start">
           <p class="font-mono-meta text-xs tracking-[0.25em] text-crimson uppercase">
             Live &amp; Loud
           </p>
@@ -124,8 +124,8 @@ const homeSchemas = [
 
       <div class="mt-8 divide-y divide-white/10 border border-white/12 bg-coal">
         {upcomingShows.map((show) => (
-          <div class="group flex flex-col gap-3 p-4 transition-colors hover:bg-asphalt sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
-            <div class="flex items-center gap-4">
+          <div class="group flex flex-col items-center gap-3.5 p-5 text-center transition-colors hover:bg-asphalt sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 sm:text-left">
+            <div class="flex flex-col items-center gap-2.5 sm:flex-row sm:items-center sm:gap-4">
               <div class="flex h-14 w-16 shrink-0 flex-col items-center justify-center border border-crimson/50 bg-obsidian text-center">
                 <span class="font-mono-meta text-[10px] font-bold tracking-widest text-crimson uppercase">
                   {show.month}
@@ -135,7 +135,7 @@ const homeSchemas = [
                 </span>
               </div>
               <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                   <h3 class="font-display text-xl tracking-wide text-white uppercase sm:text-2xl">
                     {show.city}, {show.region}
                   </h3>
@@ -145,14 +145,14 @@ const homeSchemas = [
                     </span>
                   )}
                 </div>
-                <p class="mt-0.5 truncate text-sm text-ash">
+                <p class="mt-0.5 text-sm text-ash sm:truncate">
                   {show.venue} <span class="text-white/30">•</span>{' '}
                   <span class="font-mono-meta text-xs">{show.weekday} {show.year}</span>
                 </p>
               </div>
             </div>
 
-            <div class="flex items-center gap-2 sm:shrink-0">
+            <div class="flex w-full items-center justify-center gap-2 sm:w-auto sm:shrink-0">
               <a
                 href={show.ticketUrl}
                 target="_blank"
