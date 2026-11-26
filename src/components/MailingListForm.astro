@@ -30,6 +30,7 @@ const { compact = false } = Astro.props;
     </div>
 
     <form
+      autocomplete="on"
       class="sr-signup-form mx-auto mt-7 max-w-2xl border border-black/40 bg-black/85 p-5 shadow-2xl backdrop-blur-sm sm:p-7"
     >
       <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
@@ -41,6 +42,9 @@ const { compact = false } = Astro.props;
             type="text"
             name="firstName"
             autocomplete="given-name"
+            autocapitalize="words"
+            autocorrect="on"
+            spellcheck="true"
             placeholder="First name"
             class="min-h-12 w-full border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
           />
@@ -53,6 +57,9 @@ const { compact = false } = Astro.props;
             type="text"
             name="lastName"
             autocomplete="family-name"
+            autocapitalize="words"
+            autocorrect="on"
+            spellcheck="true"
             placeholder="Last name"
             class="min-h-12 w-full border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
           />
@@ -66,6 +73,10 @@ const { compact = false } = Astro.props;
             name="email"
             required
             autocomplete="email"
+            inputmode="email"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
             placeholder="you@example.com"
             class="min-h-12 w-full border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
           />
@@ -78,6 +89,7 @@ const { compact = false } = Astro.props;
             type="tel"
             name="phone"
             autocomplete="tel"
+            inputmode="tel"
             placeholder="+1 (555) 000-0000"
             class="min-h-12 w-full border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
           />
@@ -90,6 +102,8 @@ const { compact = false } = Astro.props;
             type="text"
             name="zipCode"
             autocomplete="postal-code"
+            inputmode="text"
+            autocapitalize="characters"
             placeholder="e.g., 08753"
             class="min-h-12 w-full border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
           />
