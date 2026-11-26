@@ -268,17 +268,107 @@ const usingSupabase = isSupabaseConfigured();
             <!-- Interactive 3D Globe, Flat World & USA 50-State Fan Map -->
             <BackstageFanMap />
 
-            <!-- Daily Traffic Bar Chart -->
-            <div class="border border-white/12 bg-coal p-5">
-              <div class="mb-4 flex items-center justify-between">
-                <h2 class="font-display text-xl text-white uppercase">Daily Fan Traffic</h2>
-                <div class="flex items-center gap-4 font-mono-meta text-[10px] text-ash uppercase">
-                  <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 bg-crimson" /> Pageviews</span>
-                  <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 bg-white" /> Clicks</span>
+            <!-- Detailed Daily Traffic Graph -->
+            <div class="border border-white/12 bg-coal">
+              <!-- Header + Metric Switcher -->
+              <div class="flex flex-col gap-3 border-b border-white/10 bg-obsidian/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div>
+                  <h2 class="font-display text-2xl tracking-wide text-white uppercase">Daily Fan Traffic</h2>
+                  <p id="daily-subtitle" class="font-mono-meta text-[10px] tracking-wider text-ash uppercase">
+                    Pageviews, unique sessions &amp; ticket/merch clicks by day
+                  </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Daily chart metric">
+                  <button type="button" data-chart-mode="all" class="chart-mode-btn border border-crimson bg-crimson px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-white uppercase transition-colors">
+                    All Activity
+                  </button>
+                  <button type="button" data-chart-mode="pageviews" class="chart-mode-btn border border-white/15 bg-obsidian px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white">
+                    Pageviews
+                  </button>
+                  <button type="button" data-chart-mode="sessions" class="chart-mode-btn border border-white/15 bg-obsidian px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-cyan-400 hover:text-cyan-300">
+                    Sessions
+                  </button>
+                  <button type="button" data-chart-mode="clicks" class="chart-mode-btn border border-white/15 bg-obsidian px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-white hover:text-white">
+                    Clicks
+                  </button>
                 </div>
               </div>
-              <div id="daily-chart" class="flex h-44 items-end gap-1.5 border-b border-white/10 pt-4 pb-1"></div>
-              <div id="daily-labels" class="mt-2 flex justify-between font-mono-meta text-[10px] text-ash"></div>
+
+              <!-- 4 Quick Daily Stats -->
+              <div class="grid grid-cols-2 divide-x divide-y divide-white/8 border-b border-white/10 bg-obsidian/30 sm:grid-cols-4 sm:divide-y-0">
+                <div class="px-4 py-2.5">
+                  <span class="font-mono-meta text-[9px] tracking-widest text-ash uppercase">Daily Avg</span>
+                  <p id="daily-stat-avg" class="font-mono-meta mt-0.5 text-sm font-bold text-white">—</p>
+                </div>
+                <div class="px-4 py-2.5">
+                  <span class="font-mono-meta text-[9px] tracking-widest text-ash uppercase">Peak Day</span>
+                  <p id="daily-stat-peak" class="font-mono-meta mt-0.5 text-sm font-bold text-crimson">—</p>
+                </div>
+                <div class="px-4 py-2.5">
+                  <span class="font-mono-meta text-[9px] tracking-widest text-ash uppercase">Click Engagement</span>
+                  <p id="daily-stat-ctr" class="font-mono-meta mt-0.5 text-sm font-bold text-cyan-300">—</p>
+                </div>
+                <div class="px-4 py-2.5">
+                  <span class="font-mono-meta text-[9px] tracking-widest text-ash uppercase">Today Live</span>
+                  <p id="daily-stat-today" class="font-mono-meta mt-0.5 text-sm font-bold text-white">—</p>
+                </div>
+              </div>
+
+              <!-- Interactive Chart Stage (Y-Axis + Grid + Bars + Sessions Line + Hover HUD) -->
+              <div class="p-4 sm:p-5">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-2 font-mono-meta text-[10px] text-ash uppercase">
+                  <div class="flex flex-wrap items-center gap-3.5">
+                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 bg-crimson" /> Pageviews</span>
+                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 bg-white/90" /> Clicks</span>
+                    <span class="flex items-center gap-1.5 text-cyan-300"><span class="h-0.5 w-3.5 bg-cyan-400" /> Sessions Line</span>
+                    <span class="hidden items-center gap-1.5 sm:flex"><span class="w-3.5 border-t border-dashed border-amber-400/80" /> Avg</span>
+                  </div>
+                  <span class="text-[9px] text-ash/75">Hover or tap any day for full breakdown</span>
+                </div>
+
+                <div class="relative flex gap-2.5">
+                  <!-- Y-Axis Labels -->
+                  <div id="daily-yaxis" class="flex h-56 w-8 shrink-0 flex-col justify-between pb-1 text-right font-mono-meta text-[10px] text-ash/80 select-none"></div>
+
+                  <!-- Plot Area -->
+                  <div id="daily-plot-wrap" class="relative flex-1">
+                    <!-- Horizontal Dashed Gridlines + Avg Line -->
+                    <div id="daily-grid" class="pointer-events-none absolute inset-0 flex flex-col justify-between">
+                      <div class="border-t border-dashed border-white/10"></div>
+                      <div class="border-t border-dashed border-white/10"></div>
+                      <div class="border-t border-dashed border-white/10"></div>
+                      <div class="border-t border-dashed border-white/10"></div>
+                      <div class="border-t border-white/20"></div>
+                    </div>
+                    <div
+                      id="daily-avg-line"
+                      class="pointer-events-none absolute right-0 left-0 z-10 hidden border-t border-dashed border-amber-400/70"
+                    >
+                      <span id="daily-avg-tag" class="absolute -top-4 right-1 bg-obsidian/90 px-1 font-mono-meta text-[9px] text-amber-300">AVG</span>
+                    </div>
+
+                    <!-- SVG Sessions Trend Overlay -->
+                    <svg
+                      id="daily-trend-svg"
+                      class="pointer-events-none absolute inset-0 z-10 h-56 w-full overflow-visible"
+                      viewBox="0 0 1000 224"
+                      preserveAspectRatio="none"
+                    ></svg>
+
+                    <!-- Interactive Day Columns -->
+                    <div id="daily-chart" class="relative z-20 flex h-56 items-end gap-1 sm:gap-2"></div>
+
+                    <!-- Floating Day Breakdown Tooltip -->
+                    <div
+                      id="daily-tooltip"
+                      class="pointer-events-none absolute top-2 left-2 z-30 hidden w-56 border border-crimson/80 bg-obsidian/95 p-3 shadow-2xl backdrop-blur-md"
+                    ></div>
+                  </div>
+                </div>
+
+                <!-- X-Axis Labels -->
+                <div id="daily-labels" class="mt-2.5 ml-10 flex justify-between font-mono-meta text-[10px] text-ash"></div>
+              </div>
             </div>
 
             <!-- Top Pages / Top Clicks / Sources -->
@@ -841,8 +931,10 @@ const usingSupabase = isSupabaseConfigured();
 
       // ==================== BACKSTAGE DASHBOARD LOGIC ====================
       let currentDays = 7;
-        let allLeads: any[] = [];
-        let allPosts: any[] = [];
+      let chartMode: 'all' | 'pageviews' | 'sessions' | 'clicks' = 'all';
+      let latestDaily: any[] = [];
+      let allLeads: any[] = [];
+      let allPosts: any[] = [];
 
         function toast(msg: string) {
           const el = document.getElementById('bs-toast');
@@ -886,6 +978,195 @@ const usingSupabase = isSupabaseConfigured();
           window.location.reload();
         });
 
+        function niceCeiling(n: number) {
+          if (n <= 4) return 4;
+          const mag = Math.pow(10, Math.floor(Math.log10(n)));
+          const norm = n / mag;
+          const step = norm <= 1.2 ? 1.2 : norm <= 2 ? 2 : norm <= 4 ? 4 : norm <= 5 ? 5 : norm <= 8 ? 8 : 10;
+          return Math.ceil((step * mag) / 4) * 4;
+        }
+
+        function renderDailyChart() {
+          const daily = latestDaily;
+          const chartEl = document.getElementById('daily-chart');
+          const yAxisEl = document.getElementById('daily-yaxis');
+          const labelsEl = document.getElementById('daily-labels');
+          const svgEl = document.getElementById('daily-trend-svg');
+          const avgLine = document.getElementById('daily-avg-line');
+          const avgTag = document.getElementById('daily-avg-tag');
+          const tooltip = document.getElementById('daily-tooltip');
+          const plotWrap = document.getElementById('daily-plot-wrap');
+          if (!chartEl || !yAxisEl || !labelsEl || !svgEl || !daily.length) return;
+
+          const totalPv = daily.reduce((s, d) => s + (d.pageviews || 0), 0);
+          const totalCl = daily.reduce((s, d) => s + (d.clicks || 0), 0);
+          const avgPv = (totalPv / daily.length).toFixed(1);
+          const avgCl = (totalCl / daily.length).toFixed(1);
+          const peakDay = daily.reduce((best, d) => (d.pageviews > best.pageviews ? d : best), daily[0]);
+          const today = daily[daily.length - 1];
+          const ctr = totalPv > 0 ? Math.round((totalCl / totalPv) * 100) : 0;
+
+          const statAvg = document.getElementById('daily-stat-avg');
+          const statPeak = document.getElementById('daily-stat-peak');
+          const statCtr = document.getElementById('daily-stat-ctr');
+          const statToday = document.getElementById('daily-stat-today');
+          if (statAvg) statAvg.textContent = `${avgPv} views · ${avgCl} clicks`;
+          if (statPeak) statPeak.textContent = `${peakDay.label} (${peakDay.pageviews} views)`;
+          if (statCtr) statCtr.textContent = `${ctr}% (${totalCl} taps)`;
+          if (statToday) statToday.textContent = `${today.pageviews} views · ${today.sessions} sess`;
+
+          const getVal = (d: any) => {
+            if (chartMode === 'pageviews') return d.pageviews || 0;
+            if (chartMode === 'sessions') return d.sessions || 0;
+            if (chartMode === 'clicks') return d.clicks || 0;
+            return (d.pageviews || 0) + (d.clicks || 0);
+          };
+
+          const rawMax = Math.max(1, ...daily.map((d) => Math.max(getVal(d), chartMode === 'all' ? d.sessions || 0 : 0)));
+          const maxScale = niceCeiling(rawMax);
+
+          // Y-Axis 5 ticks
+          yAxisEl.innerHTML = [1, 0.75, 0.5, 0.25, 0]
+            .map((ratio) => `<span>${Math.round(maxScale * ratio)}</span>`)
+            .join('');
+
+          // Average line
+          const metricAvg = daily.reduce((s, d) => s + getVal(d), 0) / daily.length;
+          if (avgLine && avgTag && metricAvg > 0) {
+            const bottomPct = Math.min(96, Math.max(4, (metricAvg / maxScale) * 100));
+            avgLine.style.bottom = `${bottomPct}%`;
+            avgLine.classList.remove('hidden');
+            avgTag.textContent = `AVG ${metricAvg.toFixed(1)}`;
+          } else {
+            avgLine?.classList.add('hidden');
+          }
+
+          const showBarCounts = daily.length <= 10;
+
+          // Bars
+          chartEl.innerHTML = daily
+            .map((d: any, idx: number) => {
+              const totalH = (getVal(d) / maxScale) * 100;
+              let innerBars = '';
+              if (chartMode === 'all') {
+                const pvH = (d.pageviews / maxScale) * 100;
+                const clH = (d.clicks / maxScale) * 100;
+                innerBars = `
+                  ${clH > 0 ? `<div class="w-full bg-white/90 transition-all group-hover:bg-white" style="height:${Math.max(clH, 2)}%"></div>` : ''}
+                  ${pvH > 0 ? `<div class="w-full bg-gradient-to-t from-[#8b0f14] to-crimson transition-all group-hover:from-crimson group-hover:to-crimson-bright" style="height:${Math.max(pvH, 2)}%"></div>` : ''}
+                `;
+              } else if (chartMode === 'pageviews') {
+                innerBars =
+                  totalH > 0
+                    ? `<div class="w-full bg-gradient-to-t from-[#8b0f14] to-crimson transition-all group-hover:to-crimson-bright" style="height:${Math.max(totalH, 2)}%"></div>`
+                    : '';
+              } else if (chartMode === 'sessions') {
+                innerBars =
+                  totalH > 0
+                    ? `<div class="w-full bg-gradient-to-t from-cyan-900/80 to-cyan-400 transition-all group-hover:to-cyan-300" style="height:${Math.max(totalH, 2)}%"></div>`
+                    : '';
+              } else {
+                innerBars =
+                  totalH > 0
+                    ? `<div class="w-full bg-gradient-to-t from-zinc-400 to-white transition-all group-hover:to-amber-200" style="height:${Math.max(totalH, 2)}%"></div>`
+                    : '';
+              }
+
+              const countLabel = getVal(d);
+              const barTopPct = Math.min(96, totalH);
+              const sessPct = Math.min(98, Math.max(1, ((d.sessions || 0) / maxScale) * 100));
+              const showDot = (chartMode === 'all' || chartMode === 'sessions') && (d.sessions || 0) > 0;
+              return `<div data-day-idx="${idx}" class="daily-col group relative flex h-full flex-1 cursor-pointer flex-col justify-end rounded-t-sm px-[3px] transition-colors hover:bg-white/[0.05]">
+                ${showBarCounts && countLabel > 0 ? `<span class="pointer-events-none absolute right-0 left-0 z-20 text-center font-mono-meta text-[10px] font-bold text-chalk/90 group-hover:text-white" style="bottom:calc(${barTopPct}% + 3px)">${countLabel}</span>` : ''}
+                ${showDot ? `<span class="pointer-events-none absolute left-1/2 z-20 h-2.5 w-2.5 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-cyan-400 bg-obsidian shadow-[0_0_8px_rgba(34,211,238,0.85)]" style="bottom:${sessPct}%"></span>` : ''}
+                ${innerBars}
+              </div>`;
+            })
+            .join('');
+
+          // SVG Sessions Trend Overlay (shown on All Activity and Sessions modes)
+          if (chartMode === 'all' || chartMode === 'sessions') {
+            const w = 1000;
+            const h = 224;
+            const pts = daily.map((d, i) => {
+              const x = ((i + 0.5) / daily.length) * w;
+              const y = h - Math.min(h - 4, Math.max(2, ((d.sessions || 0) / maxScale) * h));
+              return [x, y];
+            });
+            const polyline = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+            svgEl.innerHTML = `
+              <polyline fill="none" stroke="rgba(34,211,238,0.9)" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round" points="${polyline}" />
+            `;
+          } else {
+            svgEl.innerHTML = '';
+          }
+
+          // X-Axis Labels
+          if (daily.length <= 10) {
+            labelsEl.innerHTML = daily
+              .map(
+                (d: any) =>
+                  `<div class="flex-1 text-center"><div class="text-[9px] text-ash/70 uppercase">${esc(d.weekday || '')}</div><div class="text-[10px] text-chalk">${esc(d.label)}</div></div>`
+              )
+              .join('');
+          } else {
+            const step = 5;
+            labelsEl.innerHTML = daily
+              .filter((_: any, i: number) => i % step === 0 || i === daily.length - 1)
+              .map((d: any) => `<span>${esc(d.label)}</span>`)
+              .join('');
+          }
+
+          // Hover / Tap Tooltip Bindings
+          chartEl.querySelectorAll<HTMLElement>('.daily-col').forEach((col) => {
+            const showDayTip = () => {
+              const idx = Number(col.dataset.dayIdx || '0');
+              const d = daily[idx];
+              if (!d || !tooltip || !plotWrap) return;
+              const mobPct = d.pageviews ? Math.round((d.mobileViews / d.pageviews) * 100) : 0;
+              tooltip.innerHTML = `
+                <div class="font-mono-meta text-[10px] font-bold tracking-wider text-crimson uppercase">${esc(d.weekday || '')} • ${esc(d.label)}</div>
+                <div class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 font-mono-meta text-[11px]">
+                  <div><span class="text-ash">Views</span><div class="font-bold text-white">${d.pageviews}</div></div>
+                  <div><span class="text-ash">Sessions</span><div class="font-bold text-cyan-300">${d.sessions}</div></div>
+                  <div><span class="text-ash">Clicks</span><div class="font-bold text-white">${d.clicks}</div></div>
+                  <div><span class="text-ash">Mobile</span><div class="font-bold text-crimson">${mobPct}%</div></div>
+                </div>
+                <div class="mt-2 flex items-center justify-between border-t border-white/10 pt-1.5 font-mono-meta text-[10px] text-ash">
+                  <span>Top Page</span>
+                  <span class="truncate font-bold text-chalk">${esc(d.topPage || '—')}</span>
+                </div>
+              `;
+              tooltip.classList.remove('hidden');
+              const wrapW = plotWrap.offsetWidth || 600;
+              const colLeft = col.offsetLeft + col.offsetWidth / 2;
+              const tipW = 224;
+              const left = colLeft + 14 + tipW > wrapW ? Math.max(6, colLeft - tipW - 14) : colLeft + 14;
+              tooltip.style.left = `${Math.round(left)}px`;
+            };
+            col.addEventListener('mouseenter', showDayTip);
+            col.addEventListener('click', showDayTip);
+          });
+
+          plotWrap?.addEventListener('mouseleave', () => tooltip?.classList.add('hidden'));
+        }
+
+        document.querySelectorAll<HTMLButtonElement>('.chart-mode-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            chartMode = (btn.dataset.chartMode as any) || 'all';
+            document.querySelectorAll<HTMLButtonElement>('.chart-mode-btn').forEach((b) => {
+              const active = b === btn;
+              b.classList.toggle('border-crimson', active);
+              b.classList.toggle('bg-crimson', active);
+              b.classList.toggle('text-white', active);
+              b.classList.toggle('border-white/15', !active);
+              b.classList.toggle('bg-obsidian', !active);
+              b.classList.toggle('text-ash', !active);
+            });
+            renderDailyChart();
+          });
+        });
+
         // Load Analytics + System
         async function loadAnalytics(days = currentDays) {
           currentDays = days;
@@ -911,26 +1192,9 @@ const usingSupabase = isSupabaseConfigured();
             }
           }
 
-          // Daily Chart
-          const maxVal = Math.max(1, ...a.daily.map((d: any) => d.pageviews + d.clicks));
-          const chartEl = document.getElementById('daily-chart')!;
-          chartEl.innerHTML = a.daily
-            .map((d: any) => {
-              const pvH = Math.round((d.pageviews / maxVal) * 100);
-              const clH = Math.round((d.clicks / maxVal) * 100);
-              return `<div class="group relative flex h-full flex-1 flex-col justify-end" title="${esc(d.label)}: ${d.pageviews} views, ${d.clicks} clicks">
-                <div class="w-full bg-white/90 transition-all" style="height:${clH}%"></div>
-                <div class="w-full bg-crimson transition-all group-hover:bg-crimson-bright" style="height:${Math.max(pvH, d.pageviews ? 4 : 0)}%"></div>
-              </div>`;
-            })
-            .join('');
-
-          const labelsEl = document.getElementById('daily-labels')!;
-          const step = a.daily.length > 10 ? 5 : 1;
-          labelsEl.innerHTML = a.daily
-            .filter((_: any, i: number) => i % step === 0 || i === a.daily.length - 1)
-            .map((d: any) => `<span>${esc(d.label)}</span>`)
-            .join('');
+          // Detailed Interactive Daily Chart
+          latestDaily = a.daily || [];
+          renderDailyChart();
 
           // Top Pages
           document.getElementById('top-pages')!.innerHTML = a.topPages.length

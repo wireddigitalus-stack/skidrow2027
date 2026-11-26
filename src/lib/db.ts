@@ -925,20 +925,75 @@ export async function getAnalyticsSummary(days = 7) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 
-  const daily: Array<{ date: string; label: string; pageviews: number; clicks: number }> = [];
+  type DailyInternal = {
+    date: string;
+    label: string;
+    weekday: string;
+    pageviews: number;
+    clicks: number;
+    signups: number;
+    mobileViews: number;
+    desktopViews: number;
+    sessionsSet: Set<string>;
+    pageCounts: Map<string, number>;
+  };
+
+  const dailyBuckets: DailyInternal[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const dt = new Date(Date.now() - i * 86400000);
     const iso = dt.toISOString().slice(0, 10);
     const label = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    daily.push({ date: iso, label, pageviews: 0, clicks: 0 });
+    const weekday = dt.toLocaleDateString('en-US', { weekday: 'short' });
+    dailyBuckets.push({
+      date: iso,
+      label,
+      weekday,
+      pageviews: 0,
+      clicks: 0,
+      signups: 0,
+      mobileViews: 0,
+      desktopViews: 0,
+      sessionsSet: new Set(),
+      pageCounts: new Map(),
+    });
   }
-  const dailyMap = new Map(daily.map((d) => [d.date, d]));
+  const dailyMap = new Map(dailyBuckets.map((d) => [d.date, d]));
   for (const e of events) {
     const bucket = dailyMap.get(e.created_at.slice(0, 10));
     if (!bucket) continue;
-    if (e.event_type === 'pageview') bucket.pageviews += 1;
+    bucket.sessionsSet.add(e.session_id);
+    if (e.event_type === 'pageview') {
+      bucket.pageviews += 1;
+      if (e.device_type === 'mobile' || e.device_type === 'tablet') bucket.mobileViews += 1;
+      else bucket.desktopViews += 1;
+      bucket.pageCounts.set(e.path, (bucket.pageCounts.get(e.path) || 0) + 1);
+    }
     if (e.event_type === 'click' || e.event_type === 'video_play') bucket.clicks += 1;
+    if (e.event_type === 'signup') bucket.signups += 1;
   }
+
+  const daily = dailyBuckets.map((b) => {
+    let topPage = '/';
+    let topPageCount = 0;
+    for (const [p, cnt] of b.pageCounts.entries()) {
+      if (cnt > topPageCount) {
+        topPageCount = cnt;
+        topPage = p;
+      }
+    }
+    return {
+      date: b.date,
+      label: b.label,
+      weekday: b.weekday,
+      pageviews: b.pageviews,
+      sessions: b.sessionsSet.size,
+      clicks: b.clicks,
+      signups: b.signups,
+      mobileViews: b.mobileViews,
+      desktopViews: b.desktopViews,
+      topPage: topPageCount > 0 ? topPage : '—',
+    };
+  });
 
   // ==================== GEO INTELLIGENCE AGGREGATION ====================
   type CityBucket = {
