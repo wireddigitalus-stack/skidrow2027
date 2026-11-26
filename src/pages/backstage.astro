@@ -442,7 +442,7 @@ const usingSupabase = isSupabaseConfigured();
               </div>
 
               <!-- Post Editor Form -->
-              <div class="border border-white/15 bg-coal p-5 lg:col-span-7">
+              <div id="post-editor-card" class="border border-white/15 bg-coal p-5 transition-all duration-300 lg:col-span-7">
                 <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
                   <h2 id="editor-heading" class="font-display text-2xl text-white uppercase">
                     Create New Post
@@ -1136,6 +1136,7 @@ const usingSupabase = isSupabaseConfigured();
         });
 
         let postsLoadError = '';
+        let selectedPostId = '';
 
         async function runSeedPosts() {
           toast('Loading 20 Skid Row posts into database...');
@@ -1210,7 +1211,7 @@ const usingSupabase = isSupabaseConfigured();
           }
           list.innerHTML = filtered
             .map(
-              (p) => `<button type="button" data-edit-post="${esc(p.id)}" class="flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-asphalt">
+              (p) => `<button type="button" data-edit-post="${esc(p.id)}" class="flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-asphalt ${selectedPostId === p.id ? 'border-l-2 border-crimson bg-asphalt' : ''}">
                 <img src="${esc(p.image)}" alt="" class="h-12 w-16 shrink-0 border border-white/10 object-cover" />
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 font-mono-meta text-[10px] uppercase">
@@ -1226,12 +1227,17 @@ const usingSupabase = isSupabaseConfigured();
           list.querySelectorAll<HTMLButtonElement>('[data-edit-post]').forEach((btn) => {
             btn.addEventListener('click', () => {
               const post = allPosts.find((p) => p.id === btn.dataset.editPost);
-              if (post) populateEditor(post);
+              if (post) {
+                populateEditor(post);
+                document.getElementById('post-editor-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
             });
           });
         }
 
-        function resetEditor() {
+        function resetEditor(interactive = false) {
+          selectedPostId = '';
+          if (allPosts.length > 0) renderPostsList();
           (document.getElementById('editor-heading')!).textContent = 'Create New Post';
           (document.getElementById('ed-id') as HTMLInputElement).value = '';
           (document.getElementById('ed-title') as HTMLInputElement).value = '';
@@ -1248,9 +1254,21 @@ const usingSupabase = isSupabaseConfigured();
           (document.getElementById('ed-ctaUrl') as HTMLInputElement).value = '';
           document.getElementById('btn-delete-post')?.classList.add('hidden');
           document.getElementById('editor-view-live')?.classList.add('hidden');
+
+          if (interactive) {
+            const card = document.getElementById('post-editor-card');
+            const titleInput = document.getElementById('ed-title') as HTMLInputElement | null;
+            card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            card?.classList.add('border-crimson', 'ring-1', 'ring-crimson');
+            setTimeout(() => card?.classList.remove('border-crimson', 'ring-1', 'ring-crimson'), 900);
+            titleInput?.focus();
+            toast('Ready to write a new post');
+          }
         }
 
         function populateEditor(p: any) {
+          selectedPostId = p.id || '';
+          renderPostsList();
           (document.getElementById('editor-heading')!).textContent = 'Edit Post';
           (document.getElementById('ed-id') as HTMLInputElement).value = p.id || '';
           (document.getElementById('ed-title') as HTMLInputElement).value = p.title || '';
@@ -1271,7 +1289,7 @@ const usingSupabase = isSupabaseConfigured();
           viewLive.classList.remove('hidden');
         }
 
-        document.getElementById('btn-new-post')?.addEventListener('click', resetEditor);
+        document.getElementById('btn-new-post')?.addEventListener('click', () => resetEditor(true));
         document.getElementById('cms-post-search')?.addEventListener('input', renderPostsList);
         document.getElementById('ed-image')?.addEventListener('input', (e) => {
           (document.getElementById('ed-preview-img') as HTMLImageElement).src = (e.target as HTMLInputElement).value;
