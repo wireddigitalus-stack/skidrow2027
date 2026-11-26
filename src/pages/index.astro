@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Marquee from '../components/Marquee.astro';
 import YouTubeFacade from '../components/YouTubeFacade.astro';
+import BoomboxPlayer from '../components/BoomboxPlayer.astro';
 import Icons from '../components/Icons.astro';
 import { TOUR_DATES_2027 } from '../data/tour';
 import { DISCOGRAPHY } from '../data/discography';
@@ -289,6 +290,9 @@ const latestSingle = DISCOGRAPHY[0];
       </div>
     </div>
   </section>
+
+  <!-- 1980s INTERACTIVE ALL-ERAS BOOMBOX MIX -->
+  <BoomboxPlayer />
 
   <!-- DISCOGRAPHY TEASER SHELF -->
   <section class="bg-coal py-12 sm:py-16 lg:py-20">

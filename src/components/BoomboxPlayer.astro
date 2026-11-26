@@ -1,0 +1,1175 @@
+---
+import { BOOMBOX_ERAS, BOOMBOX_TRACKS } from '../data/boomboxTracks';
+import Icons from './Icons.astro';
+
+interface Props {
+  compactHeading?: boolean;
+}
+
+const { compactHeading = false } = Astro.props;
+const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
+---
+
+<section
+  class="bb-root relative overflow-hidden border-y border-white/10 bg-[#000000] py-12 sm:py-16 lg:py-20"
+  data-tracks={tracksJson}
+>
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(226,28,33,0.16)_0%,transparent_65%)]" />
+
+  <div class="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <!-- Section Header -->
+    <div class="flex flex-col items-center text-center">
+      <div class="dymo-label">
+        <span class="dymo-text text-[10px] sm:text-xs">
+          1989 – 2026 • ALL ERAS BOOMBOX MIX
+        </span>
+      </div>
+      <h2
+        class:list={[
+          'font-display mt-4 leading-none text-white uppercase',
+          compactHeading ? 'text-4xl sm:text-5xl' : 'text-4xl sm:text-6xl',
+        ]}
+      >
+        Crank Up <span class="text-crimson">Four Decades</span>
+      </h2>
+      <p class="mt-2.5 max-w-xl text-sm text-ash sm:text-base">
+        Click the boombox chrome buttons, spin the cassette decks, slide the EQ, or switch eras—streaming straight from Skid Row's official YouTube vault.
+      </p>
+    </div>
+
+    <!-- Era Cassette Filter Strip -->
+    <div class="no-scrollbar mt-7 flex justify-start gap-2 overflow-x-auto pb-1 sm:justify-center">
+      {BOOMBOX_ERAS.map((era, idx) => (
+        <button
+          type="button"
+          data-bb-era={era.key}
+          class:list={[
+            'bb-era-btn group flex min-h-11 shrink-0 flex-col items-start border px-3.5 py-1.5 text-left transition-all',
+            idx === 0
+              ? 'border-crimson bg-crimson text-white shadow-[0_0_20px_rgba(226,28,33,0.4)]'
+              : 'border-white/15 bg-coal text-ash hover:border-crimson/70 hover:text-white',
+          ]}
+        >
+          <span class="font-mono-meta text-[11px] font-bold tracking-wider uppercase">
+            {era.label}
+          </span>
+          <span class="font-mono-meta text-[9px] tracking-widest opacity-80 uppercase">
+            {era.sub} · {era.deckHint}
+          </span>
+        </button>
+      ))}
+    </div>
+
+    <!-- ==================== INTERACTIVE 1980s BOOMBOX STAGE ==================== -->
+    <div class="relative mx-auto mt-6 w-full max-w-4xl select-none">
+      <div
+        class="bb-stage relative aspect-[3/2] w-full overflow-hidden bg-black"
+        data-powered="true"
+        data-playing="false"
+      >
+        <!-- Paid Adobe Stock 1980s Boombox Hardware Photo -->
+        <img
+          src="/images/boombox-1980s.jpg"
+          alt="Interactive 1980s Skid Row Boombox"
+          width="1024"
+          height="682"
+          loading="eager"
+          decoding="async"
+          class="h-full w-full object-contain"
+        />
+
+        <!-- Left & Right Chrome Woofer Bass Pulse Halos -->
+        <div
+          class="bb-woofer bb-woofer-l pointer-events-none absolute rounded-full border border-cyan-400/0 transition-transform duration-75"
+          style="left: 9.0%; top: 53.6%; width: 19.3%; height: 29.2%;"
+        ></div>
+        <div
+          class="bb-woofer bb-woofer-r pointer-events-none absolute rounded-full border border-crimson/0 transition-transform duration-75"
+          style="left: 71.5%; top: 53.6%; width: 19.3%; height: 29.2%;"
+        ></div>
+
+        <!-- Left & Right Orange Tweeter Subtle Glows -->
+        <div
+          class="bb-tweeter pointer-events-none absolute rounded-full opacity-0 transition-opacity duration-300"
+          style="left: 10.1%; top: 41.8%; width: 5.5%; height: 8.2%; background: radial-gradient(circle, rgba(255,95,31,0.55) 0%, transparent 72%);"
+        ></div>
+        <div
+          class="bb-tweeter pointer-events-none absolute rounded-full opacity-0 transition-opacity duration-300"
+          style="left: 84.2%; top: 41.8%; width: 5.5%; height: 8.2%; background: radial-gradient(circle, rgba(255,95,31,0.55) 0%, transparent 72%);"
+        ></div>
+
+        <!-- TOP TUNING DIAL: Interactive Scrub Bar + Gliding Crimson LED Needle -->
+        <div
+          class="bb-tuner-scrub group absolute cursor-pointer"
+          style="left: 36.2%; top: 40.0%; width: 22.8%; height: 6.4%;"
+          title="Click or scrub across Tuning Dial to seek track"
+        >
+          <div class="bb-tuner-glow pointer-events-none absolute inset-0 bg-cyan-400/10 opacity-0 transition-opacity group-hover:opacity-100"></div>
+          <div
+            class="bb-tuner-needle pointer-events-none absolute top-0 bottom-0 w-[3px] -translate-x-1/2 bg-crimson shadow-[0_0_10px_#ff262c,0_0_4px_#fff]"
+            style="left: 0%;"
+          ></div>
+        </div>
+
+        <!-- 5-BAND GRAPHIC EQUALIZER SLIDERS (Clickable EQ Presets / Fader Pips) -->
+        <div
+          class="bb-eq-faders absolute flex items-center justify-between px-[3%]"
+          style="left: 29.7%; top: 48.2%; width: 9.8%; height: 7.2%;"
+          title="Click to cycle 5-Band Rock EQ Preset"
+        >
+          {[0, 1, 2, 3, 4].map((idx) => (
+            <button
+              type="button"
+              data-bb-fader={idx}
+              aria-label={`EQ Band ${idx + 1}`}
+              class="bb-fader-track relative h-full w-[14%] cursor-pointer focus:outline-none"
+            >
+              <span
+                class="bb-fader-pip absolute left-1/2 h-[22%] w-[125%] -translate-x-1/2 rounded-[1px] bg-cyan-300 shadow-[0_0_6px_#22d3ee] transition-all duration-300"
+                style="top: 40%;"
+              ></span>
+            </button>
+          ))}
+        </div>
+
+        <!-- MINI GRAPHIC EQ CANVAS (Recessed Window Above Tape 2) -->
+        <canvas
+          class="bb-mini-eq pointer-events-none absolute rounded-[1px]"
+          width="120"
+          height="36"
+          style="left: 29.7%; top: 57.6%; width: 7.9%; height: 3.0%;"
+        ></canvas>
+
+        <!-- 3-DIGIT MECHANICAL COUNTER (Above Tape 2) -->
+        <div
+          class="bb-counter pointer-events-none absolute flex items-center justify-center bg-black/85 font-mono-meta text-[8px] font-bold tracking-[0.22em] text-amber-300 shadow-inner sm:text-[10px]"
+          style="left: 44.1%; top: 57.5%; width: 4.5%; height: 2.8%;"
+        >
+          000
+        </div>
+
+        <!-- 16-SEGMENT PEAK-HOLD VU / SOUND LEVEL METER (Above Tape 1) -->
+        <canvas
+          class="bb-vu-canvas pointer-events-none absolute rounded-[1px]"
+          width="200"
+          height="32"
+          style="left: 52.0%; top: 57.6%; width: 12.7%; height: 3.0%;"
+        ></canvas>
+
+        <!-- ROTARY VOLUME KNOB (Top Right Dial) -->
+        <button
+          type="button"
+          class="bb-vol-knob group absolute flex items-center justify-center rounded-full focus:outline-none"
+          style="left: 65.4%; top: 49.4%; width: 4.3%; height: 6.4%;"
+          title="Click to adjust Volume (25% / 50% / 75% / 100%)"
+          aria-label="Volume knob"
+        >
+          <span class="bb-vol-ring pointer-events-none absolute inset-[-2px] rounded-full border-2 border-cyan-400/50 transition-all group-hover:border-crimson group-hover:shadow-[0_0_12px_rgba(226,28,33,0.8)]"></span>
+          <span
+            class="bb-vol-pointer pointer-events-none absolute top-[12%] h-[36%] w-[2px] origin-[50%_105%] rounded-full bg-crimson shadow-[0_0_6px_#ff262c] transition-transform duration-200"
+            style="transform: rotate(90deg);"
+          ></span>
+        </button>
+
+        <!-- TAPE 2 WINDOW (BLUE — Classic Vault 1989–2014) + Spinning Cassette Reels -->
+        <div
+          class="bb-deck bb-deck-tape2 absolute cursor-pointer overflow-hidden rounded-[2px] transition-all duration-300"
+          style="left: 34.4%; top: 62.6%; width: 14.5%; height: 11.4%;"
+          title="Tape 2 — Classic Vault (1989–2014)"
+        >
+          <div class="bb-deck-glow pointer-events-none absolute inset-0 bg-cyan-400/0 transition-all duration-300"></div>
+          <!-- Left Reel -->
+          <svg
+            viewBox="0 0 40 40"
+            class="bb-reel bb-reel-tape2 pointer-events-none absolute text-cyan-200/80"
+            style="left: 31%; top: 43%; width: 20%; height: 32%;"
+          >
+            <circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="5 4" />
+            <circle cx="20" cy="20" r="5" fill="currentColor" />
+            <line x1="20" y1="6" x2="20" y2="34" stroke="currentColor" stroke-width="2" />
+            <line x1="6" y1="20" x2="34" y2="20" stroke="currentColor" stroke-width="2" />
+          </svg>
+          <!-- Right Reel -->
+          <svg
+            viewBox="0 0 40 40"
+            class="bb-reel bb-reel-tape2 pointer-events-none absolute text-cyan-200/80"
+            style="left: 55%; top: 43%; width: 20%; height: 32%;"
+          >
+            <circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="5 4" />
+            <circle cx="20" cy="20" r="5" fill="currentColor" />
+            <line x1="20" y1="6" x2="20" y2="34" stroke="currentColor" stroke-width="2" />
+            <line x1="6" y1="20" x2="34" y2="20" stroke="currentColor" stroke-width="2" />
+          </svg>
+        </div>
+
+        <!-- TAPE 1 WINDOW (RED — New Era 2022–2026) + Spinning Cassette Reels -->
+        <div
+          class="bb-deck bb-deck-tape1 absolute cursor-pointer overflow-hidden rounded-[2px] transition-all duration-300"
+          style="left: 49.9%; top: 62.6%; width: 14.5%; height: 11.4%;"
+          title="Tape 1 — Modern & 2026 New Era"
+        >
+          <div class="bb-deck-glow pointer-events-none absolute inset-0 bg-crimson/0 transition-all duration-300"></div>
+          <!-- Left Reel -->
+          <svg
+            viewBox="0 0 40 40"
+            class="bb-reel bb-reel-tape1 pointer-events-none absolute text-rose-200/85"
+            style="left: 29%; top: 43%; width: 20%; height: 32%;"
+          >
+            <circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="5 4" />
+            <circle cx="20" cy="20" r="5" fill="currentColor" />
+            <line x1="20" y1="6" x2="20" y2="34" stroke="currentColor" stroke-width="2" />
+            <line x1="6" y1="20" x2="34" y2="20" stroke="currentColor" stroke-width="2" />
+          </svg>
+          <!-- Right Reel -->
+          <svg
+            viewBox="0 0 40 40"
+            class="bb-reel bb-reel-tape1 pointer-events-none absolute text-rose-200/85"
+            style="left: 53%; top: 43%; width: 20%; height: 32%;"
+          >
+            <circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="5 4" />
+            <circle cx="20" cy="20" r="5" fill="currentColor" />
+            <line x1="20" y1="6" x2="20" y2="34" stroke="currentColor" stroke-width="2" />
+            <line x1="6" y1="20" x2="34" y2="20" stroke="currentColor" stroke-width="2" />
+          </svg>
+        </div>
+
+        <!-- RED CIRCULAR POWER BUTTON (Right of Tape 1) -->
+        <button
+          type="button"
+          class="bb-power-btn absolute rounded-full border-2 border-crimson bg-crimson/25 shadow-[0_0_16px_rgba(226,28,33,0.9)] transition-all hover:scale-110 active:scale-95 focus:outline-none"
+          style="left: 66.3%; top: 62.9%; width: 2.9%; height: 4.4%;"
+          title="Power On / Standby"
+          aria-label="Boombox Power"
+        ></button>
+
+        <!-- CHROME HARDWARE TRANSPORT BUTTONS (Left Deck — Tape 2) -->
+        <div
+          class="absolute flex items-center gap-[1.5%]"
+          style="left: 34.4%; top: 78.2%; width: 13.5%; height: 3.6%;"
+        >
+          <button
+            type="button"
+            data-bb-act="shuffle"
+            title="Shuffle Mix"
+            aria-label="Shuffle"
+            class="bb-hw-key h-full flex-1 rounded-[2px] border border-transparent transition-all hover:border-cyan-300 hover:bg-cyan-400/25 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] active:translate-y-[1px]"
+          ></button>
+          <button
+            type="button"
+            data-bb-act="prev"
+            title="Previous Track"
+            aria-label="Previous Track"
+            class="bb-hw-key h-full flex-1 rounded-[2px] border border-transparent transition-all hover:border-cyan-300 hover:bg-cyan-400/25 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] active:translate-y-[1px]"
+          ></button>
+          <button
+            type="button"
+            data-bb-act="play"
+            title="Play / Pause"
+            aria-label="Play or Pause"
+            class="bb-hw-key bb-hw-play h-full flex-[1.3] rounded-[2px] border border-crimson/60 bg-crimson/20 shadow-[0_0_10px_rgba(226,28,33,0.7)] transition-all hover:bg-crimson/45 active:translate-y-[1px]"
+          ></button>
+          <button
+            type="button"
+            data-bb-act="next"
+            title="Next Track"
+            aria-label="Next Track"
+            class="bb-hw-key h-full flex-1 rounded-[2px] border border-transparent transition-all hover:border-cyan-300 hover:bg-cyan-400/25 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] active:translate-y-[1px]"
+          ></button>
+          <button
+            type="button"
+            data-bb-act="stop"
+            title="Stop"
+            aria-label="Stop"
+            class="bb-hw-key h-full flex-1 rounded-[2px] border border-transparent transition-all hover:border-crimson hover:bg-crimson/30 active:translate-y-[1px]"
+          ></button>
+        </div>
+
+        <!-- CHROME HARDWARE TRANSPORT BUTTONS (Right Deck — Tape 1) -->
+        <div
+          class="absolute flex items-center gap-[1.5%]"
+          style="left: 52.8%; top: 78.2%; width: 10.9%; height: 3.6%;"
+        >
+          <button
+            type="button"
+            data-bb-act="prev"
+            title="Previous Track"
+            aria-label="Previous Track"
+            class="bb-hw-key h-full flex-1 rounded-[2px] border border-transparent transition-all hover:border-crimson hover:bg-crimson/30 active:translate-y-[1px]"
+          ></button>
+          <button
+            type="button"
+            data-bb-act="play"
+            title="Play / Pause"
+            aria-label="Play or Pause"
+            class="bb-hw-key bb-hw-play h-full flex-[1.3] rounded-[2px] border border-crimson/60 bg-crimson/20 shadow-[0_0_10px_rgba(226,28,33,0.7)] transition-all hover:bg-crimson/45 active:translate-y-[1px]"
+          ></button>
+          <button
+            type="button"
+            data-bb-act="next"
+            title="Next Track"
+            aria-label="Next Track"
+            class="bb-hw-key h-full flex-1 rounded-[2px] border border-transparent transition-all hover:border-crimson hover:bg-crimson/30 active:translate-y-[1px]"
+          ></button>
+          <button
+            type="button"
+            data-bb-act="stop"
+            title="Stop"
+            aria-label="Stop"
+            class="bb-hw-key h-full flex-1 rounded-[2px] border border-transparent transition-all hover:border-crimson hover:bg-crimson/30 active:translate-y-[1px]"
+          ></button>
+        </div>
+
+        <!-- First-Visit Tap-to-Play Callout Over Center Deck -->
+        <button
+          type="button"
+          data-bb-act="play"
+          class="bb-start-pill absolute top-[68%] left-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 border border-crimson bg-black/88 px-4 py-2 font-display text-sm tracking-widest text-white uppercase shadow-[0_0_28px_rgba(226,28,33,0.75)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-crimson sm:px-5 sm:py-2.5 sm:text-base"
+        >
+          <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-crimson"></span>
+          Tap to Crank It Up
+        </button>
+
+        <!-- Power-Off Dimmer Veil -->
+        <div class="bb-power-veil pointer-events-none absolute inset-0 hidden bg-black/75 transition-opacity"></div>
+      </div>
+
+      <!-- ==================== LIVE 32-BAND SPECTRUM GRAPH & DIGITAL DECK ==================== -->
+      <div class="mt-2 border border-white/15 bg-coal/95 shadow-2xl">
+        <!-- High-Res Live 32-Band Canvas Visualizer -->
+        <div class="relative border-b border-white/10 bg-[#040406] px-3 pt-3 pb-2 sm:px-5">
+          <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <span class="bb-live-dot h-2.5 w-2.5 rounded-full bg-ash"></span>
+              <span class="bb-status-text font-mono-meta text-[10px] font-bold tracking-[0.22em] text-ash uppercase">
+                Standby • Ready to Play
+              </span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              {['89 RAW', 'SLAVE CRUNCH', 'ARENA LIVE', '2026 FIRE'].map((preset, idx) => (
+                <button
+                  type="button"
+                  data-bb-eq={preset}
+                  class:list={[
+                    'bb-eq-btn border px-2 py-0.5 font-mono-meta text-[9px] font-bold tracking-wider uppercase transition-colors',
+                    idx === 3
+                      ? 'border-cyan-400 bg-cyan-400/20 text-cyan-200'
+                      : 'border-white/15 bg-obsidian text-ash hover:border-cyan-400/60 hover:text-white',
+                  ]}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <canvas
+            class="bb-main-spectrum block h-20 w-full sm:h-24"
+            width="880"
+            height="110"
+          ></canvas>
+        </div>
+
+        <!-- Now Playing Readout + Thumb-Friendly Mobile & Desktop Controls -->
+        <div class="grid grid-cols-1 items-center gap-4 p-4 sm:p-5 lg:grid-cols-12">
+          <!-- Track Info -->
+          <div class="flex items-center gap-3.5 lg:col-span-5">
+            <img
+              class="bb-cover h-14 w-14 shrink-0 border border-white/20 object-cover sm:h-16 sm:w-16"
+              src={BOOMBOX_TRACKS[0].cover}
+              alt={BOOMBOX_TRACKS[0].title}
+            />
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="bb-era-badge font-mono-meta bg-crimson/20 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-crimson uppercase">
+                  {BOOMBOX_TRACKS[0].eraLabel}
+                </span>
+                <span class="bb-deck-badge font-mono-meta text-[10px] text-cyan-300 uppercase">
+                  TAPE 1
+                </span>
+              </div>
+              <h3 class="bb-track-title font-display mt-1 truncate text-xl text-white uppercase sm:text-2xl">
+                {BOOMBOX_TRACKS[0].title}
+              </h3>
+              <p class="bb-track-album truncate font-mono-meta text-[11px] text-ash">
+                {BOOMBOX_TRACKS[0].album} ({BOOMBOX_TRACKS[0].year})
+              </p>
+            </div>
+          </div>
+
+          <!-- Tactile Transport Controls + Scrub Progress -->
+          <div class="flex flex-col gap-2.5 lg:col-span-4">
+            <div class="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                data-bb-act="shuffle"
+                aria-label="Shuffle"
+                class="bb-btn-shuffle flex h-11 w-11 items-center justify-center border border-white/15 bg-obsidian font-mono-meta text-xs text-ash transition-colors hover:border-cyan-400 hover:text-cyan-300"
+                title="Toggle Shuffle Mix"
+              >
+                SHF
+              </button>
+              <button
+                type="button"
+                data-bb-act="prev"
+                aria-label="Previous"
+                class="flex h-11 w-11 items-center justify-center border border-white/15 bg-obsidian font-mono-meta text-sm text-white transition-colors hover:border-crimson hover:text-crimson"
+              >
+                &laquo;
+              </button>
+              <button
+                type="button"
+                data-bb-act="play"
+                aria-label="Play or Pause"
+                class="bb-btn-play flex h-12 min-w-28 items-center justify-center gap-1.5 border border-crimson bg-crimson px-4 font-display text-base tracking-wider text-white uppercase shadow-[0_0_20px_rgba(226,28,33,0.45)] transition-all hover:bg-crimson-bright active:scale-95"
+              >
+                <Icons name="play" class="h-4 w-4" />
+                <span class="bb-play-label">Play</span>
+              </button>
+              <button
+                type="button"
+                data-bb-act="next"
+                aria-label="Next"
+                class="flex h-11 w-11 items-center justify-center border border-white/15 bg-obsidian font-mono-meta text-sm text-white transition-colors hover:border-crimson hover:text-crimson"
+              >
+                &raquo;
+              </button>
+              <button
+                type="button"
+                data-bb-act="stop"
+                aria-label="Stop"
+                class="flex h-11 w-11 items-center justify-center border border-white/15 bg-obsidian font-mono-meta text-xs text-ash transition-colors hover:border-crimson hover:text-white"
+                title="Stop"
+              >
+                &#9632;
+              </button>
+            </div>
+
+            <!-- Interactive Progress Bar -->
+            <div class="flex items-center gap-2 font-mono-meta text-[10px] text-ash">
+              <span class="bb-time-cur w-9 text-right">0:00</span>
+              <div class="bb-progress-bar relative h-2.5 flex-1 cursor-pointer bg-obsidian border border-white/10">
+                <div class="bb-progress-fill h-full w-0 bg-gradient-to-r from-cyan-400 via-crimson to-crimson-bright transition-[width] duration-150"></div>
+              </div>
+              <span class="bb-time-dur w-9">0:00</span>
+            </div>
+          </div>
+
+          <!-- Volume Slider + Video Deck Toggle -->
+          <div class="flex flex-wrap items-center justify-between gap-3 lg:col-span-3 lg:justify-end">
+            <label class="flex flex-1 items-center gap-2 sm:flex-initial">
+              <span class="font-mono-meta text-[10px] text-ash uppercase">Vol</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value="85"
+                aria-label="Volume"
+                class="bb-vol-slider h-1.5 w-24 cursor-pointer accent-crimson"
+              />
+              <span class="bb-vol-val w-8 font-mono-meta text-[10px] text-chalk">85%</span>
+            </label>
+            <button
+              type="button"
+              class="bb-toggle-video border border-white/20 bg-obsidian px-2.5 py-2 font-mono-meta text-[10px] font-bold tracking-wider text-chalk uppercase transition-colors hover:border-crimson hover:text-crimson"
+            >
+              Stream Deck
+            </button>
+          </div>
+        </div>
+
+        <!-- Official YouTube Stream Deck (Compact & Compliant, Expandable to Watch Video) + Tracklist -->
+        <div class="grid grid-cols-1 border-t border-white/10 lg:grid-cols-12">
+          <!-- Scrollable Era Tracklist -->
+          <div class="max-h-64 divide-y divide-white/8 overflow-y-auto bg-obsidian/70 lg:col-span-8">
+            <div class="bb-tracklist"></div>
+          </div>
+
+          <!-- Official YouTube Deck Monitor -->
+          <div class="bb-video-panel flex flex-col justify-between border-t border-white/10 bg-black p-3 lg:col-span-4 lg:border-t-0 lg:border-l">
+            <div class="mb-2 flex items-center justify-between">
+              <span class="font-mono-meta text-[10px] tracking-widest text-crimson uppercase">
+                Official YouTube Feed
+              </span>
+              <span class="font-mono-meta text-[9px] text-ash uppercase">
+                Licensed Audio Stream
+              </span>
+            </div>
+            <div class="relative aspect-video w-full overflow-hidden border border-white/15 bg-black">
+              <div class="bb-yt-mount h-full w-full"></div>
+            </div>
+            <p class="mt-2 font-mono-meta text-[10px] text-ash/80">
+              Streams directly from Skid Row's official YouTube catalog. Tap any track or chrome deck key to switch.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  @keyframes bb-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .bb-stage[data-playing="true"] .bb-reel-active {
+    animation: bb-spin 1.8s linear infinite;
+  }
+  .bb-stage[data-playing="true"] .bb-tweeter {
+    opacity: 0.9;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bb-stage[data-playing="true"] .bb-reel-active {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  declare global {
+    interface Window {
+      YT?: any;
+      onYouTubeIframeAPIReady?: () => void;
+      __srYtReadyQueue?: Array<() => void>;
+    }
+  }
+
+  function loadYouTubeAPI(cb: () => void) {
+    if (window.YT && window.YT.Player) {
+      cb();
+      return;
+    }
+    window.__srYtReadyQueue = window.__srYtReadyQueue || [];
+    window.__srYtReadyQueue.push(cb);
+
+    if (!document.getElementById('sr-yt-iframe-api')) {
+      const tag = document.createElement('script');
+      tag.id = 'sr-yt-iframe-api';
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        prev?.();
+        (window.__srYtReadyQueue || []).forEach((fn) => fn());
+        window.__srYtReadyQueue = [];
+      };
+    }
+  }
+
+  const EQ_PRESETS: Record<string, number[]> = {
+    '89 RAW': [0.75, 0.55, 0.72, 0.88, 0.92],
+    'SLAVE CRUNCH': [0.95, 0.82, 0.45, 0.78, 0.85],
+    'ARENA LIVE': [0.85, 0.72, 0.68, 0.82, 0.76],
+    '2026 FIRE': [0.92, 0.78, 0.74, 0.9, 0.95],
+  };
+
+  document.querySelectorAll<HTMLElement>('.bb-root').forEach((root, instanceIdx) => {
+    if (root.dataset.initialized) return;
+    root.dataset.initialized = 'true';
+
+    const allTracks = JSON.parse(root.dataset.tracks || '[]');
+    if (!allTracks.length) return;
+
+    let activeEra = 'all';
+    let filteredTracks = [...allTracks];
+    let currentIdx = 0;
+    let isPowered = true;
+    let isPlaying = false;
+    let isShuffle = false;
+    let volume = 85;
+    let activePreset = '2026 FIRE';
+    let eqCurve = [...EQ_PRESETS[activePreset]];
+    let ytPlayer: any = null;
+    let ytReady = false;
+    let pendingPlay = false;
+
+    const stage = root.querySelector<HTMLElement>('.bb-stage')!;
+    const startPill = root.querySelector<HTMLElement>('.bb-start-pill');
+    const powerBtn = root.querySelector<HTMLElement>('.bb-power-btn');
+    const powerVeil = root.querySelector<HTMLElement>('.bb-power-veil');
+    const tunerNeedle = root.querySelector<HTMLElement>('.bb-tuner-needle');
+    const tunerScrub = root.querySelector<HTMLElement>('.bb-tuner-scrub');
+    const counterEl = root.querySelector<HTMLElement>('.bb-counter');
+    const deckTape1 = root.querySelector<HTMLElement>('.bb-deck-tape1');
+    const deckTape2 = root.querySelector<HTMLElement>('.bb-deck-tape2');
+    const reels1 = root.querySelectorAll<SVGElement>('.bb-reel-tape1');
+    const reels2 = root.querySelectorAll<SVGElement>('.bb-reel-tape2');
+    const wooferL = root.querySelector<HTMLElement>('.bb-woofer-l');
+    const wooferR = root.querySelector<HTMLElement>('.bb-woofer-r');
+    const volKnob = root.querySelector<HTMLElement>('.bb-vol-knob');
+    const volPointer = root.querySelector<HTMLElement>('.bb-vol-pointer');
+    const volSlider = root.querySelector<HTMLInputElement>('.bb-vol-slider');
+    const volVal = root.querySelector<HTMLElement>('.bb-vol-val');
+    const faderPips = root.querySelectorAll<HTMLElement>('.bb-fader-pip');
+
+    const mainCanvas = root.querySelector<HTMLCanvasElement>('.bb-main-spectrum')!;
+    const miniCanvas = root.querySelector<HTMLCanvasElement>('.bb-mini-eq')!;
+    const vuCanvas = root.querySelector<HTMLCanvasElement>('.bb-vu-canvas')!;
+    const mainCtx = mainCanvas.getContext('2d')!;
+    const miniCtx = miniCanvas.getContext('2d')!;
+    const vuCtx = vuCanvas.getContext('2d')!;
+
+    const liveDot = root.querySelector<HTMLElement>('.bb-live-dot');
+    const statusText = root.querySelector<HTMLElement>('.bb-status-text');
+    const coverImg = root.querySelector<HTMLImageElement>('.bb-cover');
+    const eraBadge = root.querySelector<HTMLElement>('.bb-era-badge');
+    const deckBadge = root.querySelector<HTMLElement>('.bb-deck-badge');
+    const titleEl = root.querySelector<HTMLElement>('.bb-track-title');
+    const albumEl = root.querySelector<HTMLElement>('.bb-track-album');
+    const playLabel = root.querySelector<HTMLElement>('.bb-play-label');
+    const shuffleBtns = root.querySelectorAll<HTMLElement>('[data-bb-act="shuffle"]');
+    const curTimeEl = root.querySelector<HTMLElement>('.bb-time-cur');
+    const durTimeEl = root.querySelector<HTMLElement>('.bb-time-dur');
+    const progBar = root.querySelector<HTMLElement>('.bb-progress-bar');
+    const progFill = root.querySelector<HTMLElement>('.bb-progress-fill');
+    const tracklistEl = root.querySelector<HTMLElement>('.bb-tracklist')!;
+    const ytMount = root.querySelector<HTMLElement>('.bb-yt-mount')!;
+    const videoPanel = root.querySelector<HTMLElement>('.bb-video-panel');
+    const toggleVideoBtn = root.querySelector<HTMLElement>('.bb-toggle-video');
+
+    const mountId = `sr-bb-yt-${instanceIdx}-${Math.random().toString(36).slice(2, 6)}`;
+    ytMount.id = mountId;
+
+    function currentTrack() {
+      return filteredTracks[currentIdx] || filteredTracks[0] || allTracks[0];
+    }
+
+    function fmtTime(sec: number) {
+      if (!Number.isFinite(sec) || sec < 0) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function logBoomboxTelemetry(track: any) {
+      try {
+        const sid = sessionStorage.getItem('sr_sid') || 'bb_anon';
+        const payload = JSON.stringify({
+          sessionId: sid,
+          eventType: 'video_play',
+          path: window.location.pathname,
+          targetLabel: `Boombox: ${track.title} (${track.year})`,
+          targetUrl: `https://www.youtube.com/watch?v=${track.youtubeId}`,
+          deviceType: window.innerWidth < 768 ? 'mobile' : 'desktop',
+        });
+        navigator.sendBeacon?.('/api/telemetry', payload);
+      } catch {}
+    }
+
+    function applyEqFaders() {
+      faderPips.forEach((pip, idx) => {
+        const val = eqCurve[idx] ?? 0.6;
+        const topPct = Math.round((1 - val) * 72);
+        pip.style.top = `${topPct}%`;
+      });
+    }
+
+    function applyVolume(v: number) {
+      volume = Math.max(0, Math.min(100, Math.round(v)));
+      if (volSlider) volSlider.value = String(volume);
+      if (volVal) volVal.textContent = `${volume}%`;
+      if (volPointer) {
+        const deg = -135 + (volume / 100) * 270;
+        volPointer.style.transform = `rotate(${deg}deg)`;
+      }
+      if (ytPlayer && ytReady && typeof ytPlayer.setVolume === 'function') {
+        ytPlayer.setVolume(volume);
+      }
+    }
+
+    function updateDeckVisuals() {
+      const t = currentTrack();
+      stage.dataset.playing = String(isPlaying && isPowered);
+      stage.dataset.powered = String(isPowered);
+      powerVeil?.classList.toggle('hidden', isPowered);
+      startPill?.classList.toggle('hidden', isPlaying || !isPowered);
+
+      if (powerBtn) {
+        powerBtn.classList.toggle('shadow-[0_0_16px_rgba(226,28,33,0.9)]', isPowered);
+        powerBtn.classList.toggle('bg-crimson/25', isPowered);
+        powerBtn.classList.toggle('opacity-30', !isPowered);
+      }
+
+      const t1Active = isPowered && t.deck === 'tape1';
+      const t2Active = isPowered && t.deck === 'tape2';
+
+      deckTape1?.querySelector<HTMLElement>('.bb-deck-glow')?.classList.toggle('bg-crimson/20', t1Active && isPlaying);
+      deckTape2?.querySelector<HTMLElement>('.bb-deck-glow')?.classList.toggle('bg-cyan-400/20', t2Active && isPlaying);
+      deckTape1?.classList.toggle('ring-1', t1Active);
+      deckTape1?.classList.toggle('ring-crimson/70', t1Active);
+      deckTape2?.classList.toggle('ring-1', t2Active);
+      deckTape2?.classList.toggle('ring-cyan-400/70', t2Active);
+
+      reels1.forEach((r) => r.classList.toggle('bb-reel-active', t1Active && isPlaying));
+      reels2.forEach((r) => r.classList.toggle('bb-reel-active', t2Active && isPlaying));
+
+      if (liveDot) {
+        liveDot.className = isPlaying
+          ? 'bb-live-dot h-2.5 w-2.5 animate-pulse rounded-full bg-crimson shadow-[0_0_10px_#e21c21]'
+          : 'bb-live-dot h-2.5 w-2.5 rounded-full bg-ash';
+      }
+      if (statusText) {
+        statusText.textContent = !isPowered
+          ? 'Power Off • Tap Red Power Button'
+          : isPlaying
+            ? `On Air • ${t.deck === 'tape1' ? 'Tape 1 (Red)' : 'Tape 2 (Blue)'} • EQ ${activePreset}`
+            : 'Standby • Press Play on Boombox';
+      }
+      if (playLabel) playLabel.textContent = isPlaying ? 'Pause' : 'Play';
+    }
+
+    function updateTrackUI() {
+      const t = currentTrack();
+      if (coverImg) {
+        coverImg.src = t.cover;
+        coverImg.alt = t.title;
+      }
+      if (eraBadge) eraBadge.textContent = t.eraLabel;
+      if (deckBadge) {
+        deckBadge.textContent = t.deck === 'tape1' ? 'TAPE 1 • RED' : 'TAPE 2 • BLUE';
+        deckBadge.className =
+          t.deck === 'tape1'
+            ? 'bb-deck-badge font-mono-meta text-[10px] text-crimson uppercase'
+            : 'bb-deck-badge font-mono-meta text-[10px] text-cyan-300 uppercase';
+      }
+      if (titleEl) titleEl.textContent = t.title;
+      if (albumEl) albumEl.textContent = `${t.album} (${t.year})`;
+      renderTracklist();
+      updateDeckVisuals();
+    }
+
+    function renderTracklist() {
+      const cur = currentTrack();
+      tracklistEl.innerHTML = filteredTracks
+        .map((t: any, i: number) => {
+          const active = t.id === cur.id;
+          return `<button type="button" data-bb-idx="${i}" class="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-asphalt ${
+            active ? 'border-l-2 border-crimson bg-asphalt' : ''
+          }">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="font-mono-meta w-5 text-[10px] ${active ? 'font-bold text-crimson' : 'text-ash'}">
+                ${active && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}
+              </span>
+              <img src="${t.cover}" alt="" loading="lazy" class="h-9 w-9 shrink-0 border border-white/15 object-cover" />
+              <div class="min-w-0">
+                <p class="truncate font-display text-base uppercase ${active ? 'text-crimson' : 'text-white'}">${t.title}</p>
+                <p class="truncate font-mono-meta text-[10px] text-ash">${t.album} · ${t.year}</p>
+              </div>
+            </div>
+            <span class="shrink-0 font-mono-meta border px-1.5 py-0.5 text-[9px] uppercase ${
+              t.deck === 'tape1'
+                ? 'border-crimson/40 text-crimson'
+                : 'border-cyan-400/40 text-cyan-300'
+            }">
+              ${t.deck === 'tape1' ? 'T1' : 'T2'}
+            </span>
+          </button>`;
+        })
+        .join('');
+
+      tracklistEl.querySelectorAll<HTMLButtonElement>('[data-bb-idx]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.bbIdx || '0');
+          playTrackAt(idx);
+        });
+      });
+    }
+
+    function ensurePlayer(autoplay = false) {
+      if (ytPlayer) {
+        if (autoplay && ytReady) ytPlayer.playVideo();
+        return;
+      }
+      pendingPlay = autoplay;
+      loadYouTubeAPI(() => {
+        if (ytPlayer) return;
+        const first = currentTrack();
+        ytPlayer = new window.YT.Player(mountId, {
+          videoId: first.youtubeId,
+          playerVars: {
+            autoplay: pendingPlay ? 1 : 0,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1,
+            origin: window.location.origin,
+          },
+          events: {
+            onReady: () => {
+              ytReady = true;
+              ytPlayer.setVolume(volume);
+              if (pendingPlay) {
+                pendingPlay = false;
+                ytPlayer.playVideo();
+              }
+            },
+            onStateChange: (ev: any) => {
+              const YTState = window.YT.PlayerState;
+              if (ev.data === YTState.PLAYING) {
+                isPlaying = true;
+                updateDeckVisuals();
+                renderTracklist();
+                logBoomboxTelemetry(currentTrack());
+              } else if (ev.data === YTState.PAUSED) {
+                isPlaying = false;
+                updateDeckVisuals();
+                renderTracklist();
+              } else if (ev.data === YTState.ENDED) {
+                nextTrack();
+              }
+            },
+          },
+        });
+      });
+    }
+
+    function playTrackAt(idx: number) {
+      if (!isPowered) {
+        isPowered = true;
+      }
+      currentIdx = (idx + filteredTracks.length) % filteredTracks.length;
+      const t = currentTrack();
+      updateTrackUI();
+      if (ytPlayer && ytReady) {
+        ytPlayer.loadVideoById(t.youtubeId);
+        ytPlayer.setVolume(volume);
+      } else {
+        ensurePlayer(true);
+      }
+    }
+
+    function togglePlay() {
+      if (!isPowered) {
+        isPowered = true;
+        updateDeckVisuals();
+      }
+      if (!ytPlayer || !ytReady) {
+        ensurePlayer(true);
+        return;
+      }
+      if (isPlaying) {
+        ytPlayer.pauseVideo();
+      } else {
+        ytPlayer.playVideo();
+      }
+    }
+
+    function stopPlayback() {
+      if (ytPlayer && ytReady) {
+        ytPlayer.stopVideo();
+      }
+      isPlaying = false;
+      if (progFill) progFill.style.width = '0%';
+      if (tunerNeedle) tunerNeedle.style.left = '0%';
+      if (counterEl) counterEl.textContent = '000';
+      if (curTimeEl) curTimeEl.textContent = '0:00';
+      updateDeckVisuals();
+      renderTracklist();
+    }
+
+    function nextTrack() {
+      if (isShuffle && filteredTracks.length > 1) {
+        let next = currentIdx;
+        while (next === currentIdx) {
+          next = Math.floor(Math.random() * filteredTracks.length);
+        }
+        playTrackAt(next);
+      } else {
+        playTrackAt(currentIdx + 1);
+      }
+    }
+
+    function prevTrack() {
+      playTrackAt(currentIdx - 1);
+    }
+
+    function seekToRatio(ratio: number) {
+      if (!ytPlayer || !ytReady) return;
+      const dur = ytPlayer.getDuration?.() || 0;
+      if (dur > 0) {
+        ytPlayer.seekTo(dur * Math.max(0, Math.min(1, ratio)), true);
+      }
+    }
+
+    // Bind Era Filter Buttons
+    root.querySelectorAll<HTMLButtonElement>('.bb-era-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeEra = btn.dataset.bbEra || 'all';
+        root.querySelectorAll<HTMLButtonElement>('.bb-era-btn').forEach((b) => {
+          const active = b === btn;
+          b.classList.toggle('border-crimson', active);
+          b.classList.toggle('bg-crimson', active);
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('shadow-[0_0_20px_rgba(226,28,33,0.4)]', active);
+          b.classList.toggle('border-white/15', !active);
+          b.classList.toggle('bg-coal', !active);
+          b.classList.toggle('text-ash', !active);
+        });
+        filteredTracks =
+          activeEra === 'all'
+            ? [...allTracks]
+            : allTracks.filter((t: any) => t.era === activeEra);
+        currentIdx = 0;
+        if (isPlaying) {
+          playTrackAt(0);
+        } else {
+          updateTrackUI();
+          if (ytPlayer && ytReady) {
+            ytPlayer.cueVideoById(currentTrack().youtubeId);
+          }
+        }
+      });
+    });
+
+    // Bind Transport Actions (Chrome Hardware Buttons + Digital Controls)
+    root.querySelectorAll<HTMLElement>('[data-bb-act]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const act = el.dataset.bbAct;
+        if (act === 'play') togglePlay();
+        else if (act === 'prev') prevTrack();
+        else if (act === 'next') nextTrack();
+        else if (act === 'stop') stopPlayback();
+        else if (act === 'shuffle') {
+          isShuffle = !isShuffle;
+          shuffleBtns.forEach((b) => {
+            b.classList.toggle('border-cyan-400', isShuffle);
+            b.classList.toggle('text-cyan-300', isShuffle);
+            b.classList.toggle('bg-cyan-400/20', isShuffle);
+          });
+        }
+      });
+    });
+
+    // Clicking Tape 1 switches to Modern/2026; Tape 2 switches to Classics/Rebellion
+    deckTape1?.addEventListener('click', () => {
+      if (isPlaying && currentTrack().deck === 'tape1') {
+        togglePlay();
+      } else {
+        const idx = filteredTracks.findIndex((t: any) => t.deck === 'tape1');
+        if (idx >= 0) playTrackAt(idx);
+        else togglePlay();
+      }
+    });
+    deckTape2?.addEventListener('click', () => {
+      if (isPlaying && currentTrack().deck === 'tape2') {
+        togglePlay();
+      } else {
+        const idx = filteredTracks.findIndex((t: any) => t.deck === 'tape2');
+        if (idx >= 0) playTrackAt(idx);
+        else togglePlay();
+      }
+    });
+
+    // Power Button
+    powerBtn?.addEventListener('click', () => {
+      isPowered = !isPowered;
+      if (!isPowered && isPlaying && ytPlayer && ytReady) {
+        ytPlayer.pauseVideo();
+      }
+      updateDeckVisuals();
+    });
+
+    // Volume Knob (cycles 25 -> 50 -> 75 -> 100) & Slider
+    volKnob?.addEventListener('click', () => {
+      const nextVol = volume >= 95 ? 25 : volume + 25;
+      applyVolume(nextVol);
+    });
+    volSlider?.addEventListener('input', () => applyVolume(Number(volSlider.value)));
+
+    // EQ Presets + Hardware Faders
+    function selectEqPreset(name: string) {
+      activePreset = name;
+      eqCurve = [...(EQ_PRESETS[name] || EQ_PRESETS['2026 FIRE'])];
+      applyEqFaders();
+      root.querySelectorAll<HTMLButtonElement>('.bb-eq-btn').forEach((b) => {
+        const active = b.dataset.bbEq === name;
+        b.classList.toggle('border-cyan-400', active);
+        b.classList.toggle('bg-cyan-400/20', active);
+        b.classList.toggle('text-cyan-200', active);
+        b.classList.toggle('border-white/15', !active);
+        b.classList.toggle('bg-obsidian', !active);
+        b.classList.toggle('text-ash', !active);
+      });
+      updateDeckVisuals();
+    }
+
+    root.querySelectorAll<HTMLButtonElement>('.bb-eq-btn').forEach((btn) => {
+      btn.addEventListener('click', () => selectEqPreset(btn.dataset.bbEq || '2026 FIRE'));
+    });
+
+    root.querySelectorAll<HTMLButtonElement>('[data-bb-fader]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.bbFader || '0');
+        eqCurve[idx] = eqCurve[idx] > 0.85 ? 0.3 : Math.min(0.98, eqCurve[idx] + 0.2);
+        applyEqFaders();
+      });
+    });
+
+    // Scrubbing on Progress Bar & Tuning Dial
+    progBar?.addEventListener('click', (e) => {
+      const rect = progBar.getBoundingClientRect();
+      seekToRatio((e.clientX - rect.left) / rect.width);
+    });
+    tunerScrub?.addEventListener('click', (e) => {
+      const rect = tunerScrub.getBoundingClientRect();
+      seekToRatio((e.clientX - rect.left) / rect.width);
+    });
+
+    // Toggle Stream Deck highlight
+    toggleVideoBtn?.addEventListener('click', () => {
+      videoPanel?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      videoPanel?.classList.add('ring-1', 'ring-crimson');
+      setTimeout(() => videoPanel?.classList.remove('ring-1', 'ring-crimson'), 900);
+    });
+
+    // ==================== 60FPS SPECTRUM, MINI-EQ, VU METER & WOOFER PULSE ====================
+    const BANDS = 32;
+    const barVals = new Float32Array(BANDS);
+    const barPeaks = new Float32Array(BANDS);
+    let vuLevel = 0;
+    let vuPeak = 0;
+    let lastClockSync = 0;
+
+    function animate(ts: number) {
+      const t = currentTrack();
+      const active = isPlaying && isPowered;
+      const volFactor = Math.max(0.12, volume / 100);
+      const bpmFreq = ((t.bpm || 130) / 60) * Math.PI * 2;
+      const sec = ts / 1000;
+      const beat = Math.pow(0.5 + 0.5 * Math.sin(sec * bpmFreq), 3);
+
+      // Update YouTube elapsed clock every ~250ms
+      if (ts - lastClockSync > 250) {
+        lastClockSync = ts;
+        if (ytPlayer && ytReady && typeof ytPlayer.getCurrentTime === 'function') {
+          const cur = ytPlayer.getCurrentTime() || 0;
+          const dur = ytPlayer.getDuration() || 0;
+          if (curTimeEl) curTimeEl.textContent = fmtTime(cur);
+          if (durTimeEl && dur > 0) durTimeEl.textContent = fmtTime(dur);
+          if (counterEl) counterEl.textContent = String(Math.floor(cur) % 1000).padStart(3, '0');
+          if (dur > 0) {
+            const pct = Math.min(100, (cur / dur) * 100);
+            if (progFill) progFill.style.width = `${pct}%`;
+            if (tunerNeedle) tunerNeedle.style.left = `${pct}%`;
+          }
+        }
+      }
+
+      // Compute 32 spectrum bands driven by EQ curve, BPM beat, energy & volume
+      let bassSum = 0;
+      for (let i = 0; i < BANDS; i++) {
+        const eqIdx = Math.min(4, Math.floor((i / BANDS) * 5));
+        const eqWeight = eqCurve[eqIdx] ?? 0.7;
+        let target = 0.04;
+        if (active) {
+          const wave1 = 0.5 + 0.5 * Math.sin(sec * (5.2 + i * 0.45) + i * 0.9);
+          const wave2 = 0.5 + 0.5 * Math.cos(sec * (8.5 + (BANDS - i) * 0.28) - i * 0.6);
+          const bassBoost = i < 7 ? beat * 0.55 : beat * 0.2;
+          target = Math.min(
+            1,
+            (0.18 + wave1 * 0.42 + wave2 * 0.25 + bassBoost) * eqWeight * (t.energy || 0.9) * volFactor
+          );
+        } else if (isPowered) {
+          // Subtle idle analog noise floor
+          target = 0.05 + 0.03 * Math.sin(sec * 2 + i * 0.5);
+        }
+        barVals[i] += (target - barVals[i]) * (active ? 0.32 : 0.12);
+        if (barVals[i] > barPeaks[i]) barPeaks[i] = barVals[i];
+        else barPeaks[i] = Math.max(0, barPeaks[i] - 0.012);
+        if (i < 6) bassSum += barVals[i];
+      }
+
+      // Draw Main 32-Band Spectrum Canvas
+      const mw = mainCanvas.width;
+      const mh = mainCanvas.height;
+      mainCtx.clearRect(0, 0, mw, mh);
+
+      // Subtle grid lines
+      mainCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+      mainCtx.lineWidth = 1;
+      for (let g = 1; g <= 3; g++) {
+        const gy = Math.round((mh / 4) * g) + 0.5;
+        mainCtx.beginPath();
+        mainCtx.moveTo(0, gy);
+        mainCtx.lineTo(mw, gy);
+        mainCtx.stroke();
+      }
+
+      const gap = 5;
+      const bw = (mw - gap * (BANDS - 1)) / BANDS;
+      for (let i = 0; i < BANDS; i++) {
+        const x = i * (bw + gap);
+        const h = Math.max(3, barVals[i] * (mh - 12));
+        const grad = mainCtx.createLinearGradient(0, mh, 0, 0);
+        grad.addColorStop(0, '#0891b2');
+        grad.addColorStop(0.55, '#22d3ee');
+        grad.addColorStop(0.78, '#e21c21');
+        grad.addColorStop(1, '#ff3b41');
+        mainCtx.fillStyle = grad;
+        mainCtx.fillRect(x, mh - h, bw, h);
+
+        // Peak-hold cap
+        const py = mh - Math.max(4, barPeaks[i] * (mh - 12)) - 3;
+        mainCtx.fillStyle = barPeaks[i] > 0.72 ? '#ff262c' : '#e4e4e7';
+        mainCtx.fillRect(x, py, bw, 2.5);
+      }
+
+      // Draw Mini EQ Graph (inside boombox chassis above Tape 2)
+      miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+      if (isPowered) {
+        miniCtx.fillStyle = 'rgba(0, 12, 18, 0.75)';
+        miniCtx.fillRect(0, 0, miniCanvas.width, miniCanvas.height);
+        for (let b = 0; b < 10; b++) {
+          const val = barVals[b * 3] || 0.08;
+          const bh = Math.max(2, val * (miniCanvas.height - 4));
+          miniCtx.fillStyle = val > 0.7 ? '#e21c21' : '#22d3ee';
+          miniCtx.fillRect(b * 12 + 2, miniCanvas.height - bh - 1, 8, bh);
+        }
+      }
+
+      // Draw 16-Segment Peak-Hold VU Sound Level Meter (above Tape 1)
+      vuCtx.clearRect(0, 0, vuCanvas.width, vuCanvas.height);
+      const targetVu = active ? Math.min(1, (bassSum / 6) * 1.15) : isPowered ? 0.06 : 0;
+      vuLevel += (targetVu - vuLevel) * 0.3;
+      if (vuLevel > vuPeak) vuPeak = vuLevel;
+      else vuPeak = Math.max(0, vuPeak - 0.015);
+
+      const segs = 16;
+      const segW = (vuCanvas.width - (segs - 1) * 3) / segs;
+      const litCount = Math.round(vuLevel * segs);
+      const peakSeg = Math.min(segs - 1, Math.floor(vuPeak * segs));
+      for (let s = 0; s < segs; s++) {
+        const sx = s * (segW + 3);
+        const lit = s < litCount || (active && s === peakSeg);
+        let col = '#18181b';
+        if (lit) {
+          col = s < 8 ? '#22c55e' : s < 12 ? '#22d3ee' : s < 14 ? '#f59e0b' : '#ff262c';
+        }
+        vuCtx.fillStyle = col;
+        vuCtx.fillRect(sx, 4, segW, vuCanvas.height - 8);
+      }
+
+      // Subtle Speaker Cone Bass Thump Pulse
+      if (wooferL && wooferR) {
+        const pulse = active ? 1 + (bassSum / 6) * 0.028 : 1;
+        const glow = active ? Math.min(0.45, (bassSum / 6) * 0.5) : 0;
+        wooferL.style.transform = `scale(${pulse.toFixed(4)})`;
+        wooferR.style.transform = `scale(${pulse.toFixed(4)})`;
+        wooferL.style.boxShadow = active
+          ? `inset 0 0 24px rgba(34,211,238,${glow.toFixed(2)}), 0 0 22px rgba(34,211,238,${(glow * 0.6).toFixed(2)})`
+          : 'none';
+        wooferR.style.boxShadow = active
+          ? `inset 0 0 24px rgba(226,28,33,${glow.toFixed(2)}), 0 0 22px rgba(226,28,33,${(glow * 0.6).toFixed(2)})`
+          : 'none';
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Initialize UI
+    applyEqFaders();
+    applyVolume(85);
+    updateTrackUI();
+    requestAnimationFrame(animate);
+  });
+</script>
