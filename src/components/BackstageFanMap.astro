@@ -4,25 +4,31 @@
 ---
 
 <div id="fan-map-module" class="border border-white/15 bg-coal">
-  <!-- Header & Primary Projection Filters -->
-  <div class="border-b border-white/10 bg-obsidian/70 px-4 py-4 sm:px-5">
+  <!-- Header & Primary Projection Filters (Always Visible; Click to Expand/Collapse) -->
+  <div class="bg-obsidian/70 px-4 py-4 sm:px-5">
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div>
+      <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-2">
           <span class="inline-flex items-center gap-1.5 border border-crimson/60 bg-crimson/15 px-2 py-0.5 font-mono-meta text-[10px] font-bold tracking-[0.18em] text-crimson uppercase">
-            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-crimson"></span>
+            <span id="geo-live-dot" class="h-1.5 w-1.5 rounded-full bg-crimson"></span>
             Live Geo Radar
           </span>
           <h2 class="font-display text-2xl tracking-wide text-white uppercase sm:text-3xl">
             Worldwide &amp; USA Fanbase Map
           </h2>
+          <span
+            id="geo-power-badge"
+            class="border border-white/15 bg-coal px-2 py-0.5 font-mono-meta text-[9px] tracking-widest text-ash uppercase"
+          >
+            Standby • 0% CPU
+          </span>
         </div>
         <p id="geo-summary-line" class="font-mono-meta mt-1 text-[11px] text-ash uppercase">
-          Automatic IP &amp; cellular city telemetry • Loading visitor map…
+          Automatic IP &amp; cellular city telemetry • Click to open interactive globe &amp; USA map
         </p>
       </div>
 
-      <!-- Map View Mode Switcher: 3D Globe | Flat World | USA States -->
+      <!-- Map View Mode Switcher + Expand/Collapse Button -->
       <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Map view mode">
         <button
           type="button"
@@ -45,11 +51,24 @@
         >
           USA States
         </button>
+        <button
+          type="button"
+          id="toggle-fan-map"
+          aria-expanded="false"
+          aria-controls="fan-map-collapsible"
+          class="ml-1 inline-flex items-center gap-1.5 border border-white/25 bg-obsidian px-3 py-1.5 font-mono-meta text-[11px] font-bold tracking-wider text-white uppercase transition-colors hover:border-crimson hover:bg-crimson"
+        >
+          <span id="toggle-fan-map-label">Open Map</span>
+          <span id="toggle-fan-map-icon" class="text-xs leading-none">&#9662;</span>
+        </button>
       </div>
     </div>
+  </div>
 
+  <!-- Collapsible Body (Collapsed by Default — Zero Canvas Rendering Until Opened) -->
+  <div id="fan-map-collapsible" class="hidden border-t border-white/10">
     <!-- Secondary Filter Row: Traffic Segment + Overlay Toggles + Globe Camera Presets -->
-    <div class="mt-3 flex flex-wrap items-center justify-between gap-2.5 border-t border-white/10 pt-3">
+    <div class="flex flex-wrap items-center justify-between gap-2.5 border-b border-white/10 bg-obsidian/70 px-4 py-3 sm:px-5">
       <!-- Traffic Filter Pills -->
       <div class="flex flex-wrap items-center gap-1.5">
         <span class="font-mono-meta mr-1 text-[10px] tracking-widest text-ash uppercase">Filter:</span>
@@ -108,10 +127,9 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Main Grid: Interactive Map Stage (Left 8 cols) + Live Geo Breakdown Drawer (Right 4 cols) -->
-  <div class="grid grid-cols-1 lg:grid-cols-12">
+    <!-- Main Grid: Interactive Map Stage (Left 8 cols) + Live Geo Breakdown Drawer (Right 4 cols) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12">
     <!-- Map Canvas Container -->
     <div class="relative flex flex-col border-b border-white/10 bg-[#050507] lg:col-span-8 lg:border-r lg:border-b-0">
       <!-- Active State Drill-down Pill (shown when a US state is clicked) -->
@@ -254,6 +272,7 @@
       </div>
     </div>
   </div>
+  </div>
 </div>
 
 <script>
@@ -352,27 +371,37 @@
   const canvas = document.getElementById('fan-map-canvas') as HTMLCanvasElement | null;
   const stage = document.getElementById('fan-map-stage');
   const tooltipEl = document.getElementById('fan-map-tooltip');
+  const collapsibleEl = document.getElementById('fan-map-collapsible');
+  const toggleBtn = document.getElementById('toggle-fan-map');
+  const toggleLabel = document.getElementById('toggle-fan-map-label');
+  const toggleIcon = document.getElementById('toggle-fan-map-icon');
+  const powerBadge = document.getElementById('geo-power-badge');
+  const liveDot = document.getElementById('geo-live-dot');
 
   if (canvas && stage) {
     const ctx = canvas.getContext('2d')!;
 
-    // Decode TopoJSON geometry once
-    const worldCountriesGeo = feature(
-      worldAtlas as any,
-      (worldAtlas as any).objects.countries
-    ) as any;
-    const usStatesGeo = feature(
-      usAtlas as any,
-      (usAtlas as any).objects.states
-    ) as any;
-    const usStatesMesh = mesh(
-      usAtlas as any,
-      (usAtlas as any).objects.states,
-      (a: any, b: any) => a !== b
-    );
-    const graticule = geoGraticule10();
+    // Lazy-decoded TopoJSON geometry (0 CPU cost until user opens the map)
+    let worldCountriesGeo: any = null;
+    let usStatesGeo: any = null;
+    let usStatesMesh: any = null;
+    let graticule: any = null;
 
-    // State
+    function ensureGeometryLoaded() {
+      if (worldCountriesGeo) return;
+      worldCountriesGeo = feature(worldAtlas as any, (worldAtlas as any).objects.countries);
+      usStatesGeo = feature(usAtlas as any, (usAtlas as any).objects.states);
+      usStatesMesh = mesh(
+        usAtlas as any,
+        (usAtlas as any).objects.states,
+        (a: any, b: any) => a !== b
+      );
+      graticule = geoGraticule10();
+    }
+
+    // State (Starts collapsed to save CPU/battery)
+    let isExpanded = false;
+    let rafId: number | null = null;
     let geoData: GeoPayload | null = null;
     let mapMode: MapMode = 'globe';
     let trafficFilter: TrafficFilter = 'all';
@@ -767,7 +796,52 @@
       }
 
       ctx.restore();
-      requestAnimationFrame(drawFrame);
+      if (shouldAnimate()) {
+        rafId = requestAnimationFrame(drawFrame);
+      } else {
+        rafId = null;
+      }
+    }
+
+    function shouldAnimate(): boolean {
+      if (!isExpanded || document.hidden) return false;
+      const panel = document.getElementById('panel-analytics');
+      if (panel && panel.classList.contains('hidden')) return false;
+      return true;
+    }
+
+    function syncAnimationLoop() {
+      if (shouldAnimate()) {
+        ensureGeometryLoaded();
+        if (rafId === null) {
+          rafId = requestAnimationFrame(drawFrame);
+        }
+      } else if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    function setExpanded(next: boolean) {
+      isExpanded = next;
+      collapsibleEl?.classList.toggle('hidden', !isExpanded);
+      toggleBtn?.setAttribute('aria-expanded', String(isExpanded));
+      if (toggleLabel) toggleLabel.textContent = isExpanded ? 'Collapse' : 'Open Map';
+      if (toggleIcon) toggleIcon.innerHTML = isExpanded ? '&#9652;' : '&#9662;';
+      if (powerBadge) {
+        powerBadge.textContent = isExpanded ? 'Active' : 'Standby • 0% CPU';
+        powerBadge.classList.toggle('text-emerald-400', isExpanded);
+        powerBadge.classList.toggle('border-emerald-500/40', isExpanded);
+        powerBadge.classList.toggle('text-ash', !isExpanded);
+        powerBadge.classList.toggle('border-white/15', !isExpanded);
+      }
+      liveDot?.classList.toggle('animate-pulse', isExpanded);
+      if (!isExpanded) {
+        hideTooltip();
+      } else {
+        renderLeaderboard();
+      }
+      syncAnimationLoop();
     }
 
     function drawMarkers(
@@ -1295,8 +1369,19 @@
     }
 
     // Event bindings
+    toggleBtn?.addEventListener('click', () => setExpanded(!isExpanded));
+
     document.querySelectorAll<HTMLButtonElement>('.map-mode-btn').forEach((btn) => {
-      btn.addEventListener('click', () => setMapMode((btn.dataset.mapMode as MapMode) || 'globe'));
+      btn.addEventListener('click', () => {
+        setMapMode((btn.dataset.mapMode as MapMode) || 'globe');
+        if (!isExpanded) setExpanded(true);
+      });
+    });
+
+    // Pause canvas loop automatically when browser tab is hidden or user leaves Analytics tab
+    document.addEventListener('visibilitychange', syncAnimationLoop);
+    document.querySelectorAll<HTMLButtonElement>('.bs-tab').forEach((tab) => {
+      tab.addEventListener('click', () => setTimeout(syncAnimationLoop, 0));
     });
 
     document.querySelectorAll<HTMLButtonElement>('.geo-filter-btn').forEach((btn) => {
@@ -1399,7 +1484,5 @@
     if ((window as any).__latestBackstageGeo) {
       applyGeoData((window as any).__latestBackstageGeo);
     }
-
-    requestAnimationFrame(drawFrame);
   }
 </script>
