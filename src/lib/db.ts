@@ -280,6 +280,36 @@ function mapSupabasePost(row: Record<string, any>): ManagedPost {
   };
 }
 
+export async function seedInitialPostsToSupabase(): Promise<ManagedPost[]> {
+  const sb = getSupabase();
+  const rows = NEWS_POSTS.map((p) => ({
+    slug: p.slug,
+    title: p.title,
+    date_label: p.date,
+    iso_date: p.isoDate,
+    read_time: p.readTime || '2 min read',
+    category: p.category,
+    image_url: p.image || '/images/hero-band.jpg',
+    excerpt: p.excerpt || '',
+    body: p.body || [],
+    cta_label: p.ctaLabel || '',
+    cta_url: p.ctaUrl || '',
+    tags: p.tags || [],
+    status: 'published',
+    updated_at: new Date().toISOString(),
+  }));
+  const { data, error } = await sb
+    .from('news_posts')
+    .upsert(rows, { onConflict: 'slug' })
+    .select('*')
+    .order('iso_date', { ascending: false });
+  if (error) {
+    console.error('Supabase auto-seed error:', error.message);
+    return [];
+  }
+  return (data || []).map(mapSupabasePost);
+}
+
 export async function listPosts(includeDrafts = false): Promise<ManagedPost[]> {
   if (isSupabaseConfigured()) {
     const sb = getSupabase();
@@ -291,6 +321,15 @@ export async function listPosts(includeDrafts = false): Promise<ManagedPost[]> {
       return NEWS_POSTS.map((p, i) => ({ ...p, id: `fallback-${i}`, status: 'published' }));
     }
     if (!data || data.length === 0) {
+      // Auto-seed the 20 official Skid Row posts on first connect if none have been deleted
+      const { count: deleteCount } = await sb
+        .from('admin_audit_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('action', 'POST_DELETE');
+      if (!deleteCount) {
+        const seeded = await seedInitialPostsToSupabase();
+        if (seeded.length > 0) return seeded;
+      }
       return includeDrafts
         ? []
         : NEWS_POSTS.map((p, i) => ({ ...p, id: `fallback-${i}`, status: 'published' }));

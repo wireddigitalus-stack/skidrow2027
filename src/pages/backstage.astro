@@ -422,7 +422,7 @@ const usingSupabase = isSupabaseConfigured();
                 id="btn-new-post"
                 class="btn-crimson !min-h-10 !px-4 !py-2 text-sm"
               >
-                + New Dispatch
+                + New Post
               </button>
             </div>
 
@@ -432,7 +432,7 @@ const usingSupabase = isSupabaseConfigured();
                 <input
                   id="cms-post-search"
                   type="search"
-                  placeholder="Filter dispatches..."
+                  placeholder="Filter posts..."
                   class="min-h-10 w-full border border-white/20 bg-coal px-3 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
                 />
                 <div
@@ -445,7 +445,7 @@ const usingSupabase = isSupabaseConfigured();
               <div class="border border-white/15 bg-coal p-5 lg:col-span-7">
                 <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
                   <h2 id="editor-heading" class="font-display text-2xl text-white uppercase">
-                    Create New Dispatch
+                    Create New Post
                   </h2>
                   <a
                     id="editor-view-live"
@@ -619,7 +619,7 @@ const usingSupabase = isSupabaseConfigured();
 
                   <div class="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
                     <button type="submit" class="btn-crimson">
-                      Save &amp; Publish Dispatch
+                      Save &amp; Publish Post
                     </button>
                     <button
                       type="button"
@@ -1148,6 +1148,25 @@ const usingSupabase = isSupabaseConfigured();
           const q = (document.getElementById('cms-post-search') as HTMLInputElement).value.trim().toLowerCase();
           const filtered = allPosts.filter((p) => !q || p.title.toLowerCase().includes(q));
           const list = document.getElementById('cms-posts-list')!;
+          if (filtered.length === 0) {
+            list.innerHTML = `<div class="p-6 text-center">
+              <p class="font-mono-meta text-xs text-ash uppercase">${q ? 'No matching posts found.' : 'No posts in database yet.'}</p>
+              ${!q ? '<button type="button" id="inline-seed-posts" class="btn-crimson mt-4 !min-h-10 !px-4 !py-2 text-xs">Load 20 Skid Row Posts</button>' : ''}
+            </div>`;
+            document.getElementById('inline-seed-posts')?.addEventListener('click', async () => {
+              toast('Loading 20 Skid Row posts...');
+              const res = await fetch('/api/admin/seed', { method: 'POST' });
+              const json = await res.json();
+              if (res.ok && json.ok) {
+                toast(`Loaded ${json.seeded} posts!`);
+                await loadPosts();
+                await loadAnalytics();
+              } else {
+                toast(json.error || 'Could not seed posts');
+              }
+            });
+            return;
+          }
           list.innerHTML = filtered
             .map(
               (p) => `<button type="button" data-edit-post="${esc(p.id)}" class="flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-asphalt">
@@ -1172,7 +1191,7 @@ const usingSupabase = isSupabaseConfigured();
         }
 
         function resetEditor() {
-          (document.getElementById('editor-heading')!).textContent = 'Create New Dispatch';
+          (document.getElementById('editor-heading')!).textContent = 'Create New Post';
           (document.getElementById('ed-id') as HTMLInputElement).value = '';
           (document.getElementById('ed-title') as HTMLInputElement).value = '';
           (document.getElementById('ed-slug') as HTMLInputElement).value = '';
@@ -1191,7 +1210,7 @@ const usingSupabase = isSupabaseConfigured();
         }
 
         function populateEditor(p: any) {
-          (document.getElementById('editor-heading')!).textContent = 'Edit Dispatch';
+          (document.getElementById('editor-heading')!).textContent = 'Edit Post';
           (document.getElementById('ed-id') as HTMLInputElement).value = p.id || '';
           (document.getElementById('ed-title') as HTMLInputElement).value = p.title || '';
           (document.getElementById('ed-slug') as HTMLInputElement).value = p.slug || '';
@@ -1271,10 +1290,10 @@ const usingSupabase = isSupabaseConfigured();
 
         document.getElementById('btn-delete-post')?.addEventListener('click', async () => {
           const id = (document.getElementById('ed-id') as HTMLInputElement).value;
-          if (!id || !confirm('Delete this dispatch permanently?')) return;
+          if (!id || !confirm('Delete this post permanently?')) return;
           const res = await fetch(`/api/admin/posts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
           if (res.ok) {
-            toast('Dispatch deleted');
+            toast('Post deleted');
             resetEditor();
             loadPosts();
           }
