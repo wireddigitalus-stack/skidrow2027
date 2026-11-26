@@ -19,7 +19,7 @@ interface Props {
 
 const {
   title,
-  description = 'Official website of Skid Row. 2027 North American tour dates, new single "Won\'t Get Fooled Again" featuring Justin Sargent, interactive 1980s All-Eras Boombox, full discography, official videos, band bio, and news.',
+  description = 'Official website of Skid Row. 2027 North American tour dates, new single "Won\'t Get Fooled Again" featuring Justin Sargent, full discography, official videos, band bio, and news.',
   image = '/images/og-skidrow-2027.jpg',
   imageAlt = 'Skid Row — 40 Years of Rebellion, Back on Stage in 2027',
   ogType = 'website',
@@ -30,7 +30,7 @@ const {
 
 const pageTitle =
   title === 'Skid Row'
-    ? 'Skid Row | Official Site — 2027 Tour, New Music & Boombox'
+    ? 'Skid Row | Official Site — 2027 Tour, New Music & News'
     : `${title} | Skid Row`;
 
 const cleanPath = Astro.url.pathname === '/' ? '/' : Astro.url.pathname.replace(/\/+$/, '');
