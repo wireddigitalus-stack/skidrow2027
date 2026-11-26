@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import BackstageFanMap from '../components/BackstageFanMap.astro';
 import { isAuthenticated } from '../lib/auth';
 import { isSupabaseConfigured } from '../lib/db';
 
@@ -264,6 +265,9 @@ const usingSupabase = isSupabaseConfigured();
               </div>
             </div>
 
+            <!-- Interactive 3D Globe, Flat World & USA 50-State Fan Map -->
+            <BackstageFanMap />
+
             <!-- Daily Traffic Bar Chart -->
             <div class="border border-white/12 bg-coal p-5">
               <div class="mb-4 flex items-center justify-between">
@@ -305,6 +309,7 @@ const usingSupabase = isSupabaseConfigured();
                       <th class="py-2 pr-3">Time</th>
                       <th class="py-2 pr-3">Event</th>
                       <th class="py-2 pr-3">Path / Target</th>
+                      <th class="py-2 pr-3">Location</th>
                       <th class="py-2 pr-3">Device</th>
                       <th class="py-2">Source</th>
                     </tr>
@@ -894,6 +899,16 @@ const usingSupabase = isSupabaseConfigured();
           (document.getElementById('kpi-mobile')!).textContent = `${a.mobilePct}%`;
           (document.getElementById('kpi-clicks')!).textContent = String(a.totalClicks);
 
+          // Update 3D Globe / Flat World / USA Fanbase Map
+          if (a.geo) {
+            (window as any).__latestBackstageGeo = a.geo;
+            if (typeof (window as any).__updateBackstageFanMap === 'function') {
+              (window as any).__updateBackstageFanMap(a.geo);
+            } else {
+              window.dispatchEvent(new CustomEvent('skidrow:geo-update', { detail: a.geo }));
+            }
+          }
+
           // Daily Chart
           const maxVal = Math.max(1, ...a.daily.map((d: any) => d.pageviews + d.clicks));
           const chartEl = document.getElementById('daily-chart')!;
@@ -972,10 +987,13 @@ const usingSupabase = isSupabaseConfigured();
                   : e.event_type === 'click' || e.event_type === 'video_play'
                     ? 'bg-crimson/25 text-crimson'
                     : 'bg-white/10 text-chalk';
+              const locParts = [e.city, e.region, e.country && e.country !== 'LOCAL' ? e.country : ''].filter(Boolean);
+              const locLabel = locParts.length ? locParts.join(', ') : 'Local';
               return `<tr>
                 <td class="py-2 pr-3 font-mono-meta text-[11px] text-ash">${t}</td>
                 <td class="py-2 pr-3"><span class="px-1.5 py-0.5 font-mono-meta text-[10px] uppercase ${badge}">${esc(e.event_type)}</span></td>
                 <td class="py-2 pr-3">${esc(e.target_label || e.path)}</td>
+                <td class="py-2 pr-3 font-mono-meta text-[11px] text-chalk/90">${esc(locLabel)}</td>
                 <td class="py-2 pr-3 font-mono-meta text-[11px] uppercase text-ash">${esc(e.device_type)}</td>
                 <td class="py-2 font-mono-meta text-[11px] text-ash">${esc(e.utm_source || e.referrer || 'direct')}</td>
               </tr>`;

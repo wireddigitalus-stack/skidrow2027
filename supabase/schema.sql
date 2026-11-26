@@ -65,13 +65,24 @@ create table if not exists public.telemetry_events (
   utm_source text not null default '',
   device_type text not null default 'mobile' check (device_type in ('mobile', 'tablet', 'desktop')),
   country text not null default '',
+  region text not null default '',
   city text not null default '',
+  latitude double precision,
+  longitude double precision,
+  postal_code text not null default '',
   created_at timestamptz not null default now()
 );
+
+-- Safe upgrade statements for existing telemetry_events tables
+alter table public.telemetry_events add column if not exists region text not null default '';
+alter table public.telemetry_events add column if not exists latitude double precision;
+alter table public.telemetry_events add column if not exists longitude double precision;
+alter table public.telemetry_events add column if not exists postal_code text not null default '';
 
 create index if not exists idx_telemetry_created_at on public.telemetry_events (created_at desc);
 create index if not exists idx_telemetry_event_type on public.telemetry_events (event_type);
 create index if not exists idx_telemetry_path on public.telemetry_events (path);
+create index if not exists idx_telemetry_geo on public.telemetry_events (country, region, city);
 
 -- 4. Backstage Admin Audit Logs
 create table if not exists public.admin_audit_logs (

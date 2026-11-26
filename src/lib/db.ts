@@ -3,6 +3,13 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NEWS_POSTS, type NewsPost } from '../data/news';
+import {
+  getCountryName,
+  getStateName,
+  nearestTourStop,
+  resolveFallbackGeo,
+  TOUR_STOPS_GEO,
+} from './geo';
 
 export interface LeadRecord {
   id: string;
@@ -39,7 +46,11 @@ export interface TelemetryEvent {
   utm_source: string;
   device_type: 'mobile' | 'tablet' | 'desktop';
   country: string;
+  region?: string;
   city: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  postal_code?: string;
   created_at: string;
 }
 
@@ -117,11 +128,48 @@ function buildInitialSeed(): LocalStoreSchema {
   const devices: Array<'mobile' | 'desktop' | 'tablet'> = [
     'mobile', 'mobile', 'mobile', 'desktop', 'mobile', 'tablet',
   ];
+  const seedGeoPool = [
+    { country: 'US', region: 'NJ', city: 'Toms River', lat: 39.9537, lng: -74.1979 },
+    { country: 'US', region: 'NJ', city: 'Newark', lat: 40.7357, lng: -74.1724 },
+    { country: 'US', region: 'NY', city: 'New York', lat: 40.7128, lng: -74.006 },
+    { country: 'US', region: 'CA', city: 'Los Angeles', lat: 34.0522, lng: -118.2437 },
+    { country: 'US', region: 'CA', city: 'San Diego', lat: 32.7157, lng: -117.1611 },
+    { country: 'US', region: 'TX', city: 'Dallas', lat: 32.7767, lng: -96.797 },
+    { country: 'US', region: 'TX', city: 'Austin', lat: 30.2672, lng: -97.7431 },
+    { country: 'US', region: 'TX', city: 'Houston', lat: 29.7604, lng: -95.3698 },
+    { country: 'US', region: 'FL', city: 'Tampa', lat: 27.9506, lng: -82.4572 },
+    { country: 'US', region: 'FL', city: 'Daytona Beach', lat: 29.2108, lng: -81.0228 },
+    { country: 'US', region: 'OH', city: 'Columbus', lat: 39.9612, lng: -82.9988 },
+    { country: 'US', region: 'OH', city: 'Cleveland', lat: 41.4993, lng: -81.6944 },
+    { country: 'US', region: 'IL', city: 'Chicago', lat: 41.8781, lng: -87.6298 },
+    { country: 'US', region: 'TN', city: 'Nashville', lat: 36.1627, lng: -86.7816 },
+    { country: 'US', region: 'PA', city: 'Philadelphia', lat: 39.9526, lng: -75.1652 },
+    { country: 'US', region: 'AZ', city: 'Phoenix', lat: 33.4484, lng: -112.074 },
+    { country: 'US', region: 'NV', city: 'Las Vegas', lat: 36.1699, lng: -115.1398 },
+    { country: 'US', region: 'CO', city: 'Denver', lat: 39.7392, lng: -104.9903 },
+    { country: 'US', region: 'WA', city: 'Seattle', lat: 47.6062, lng: -122.3321 },
+    { country: 'US', region: 'MI', city: 'Detroit', lat: 42.3314, lng: -83.0458 },
+    { country: 'US', region: 'GA', city: 'Atlanta', lat: 33.749, lng: -84.388 },
+    { country: 'US', region: 'MA', city: 'Boston', lat: 42.3601, lng: -71.0589 },
+    { country: 'CA', region: 'ON', city: 'Toronto', lat: 43.6532, lng: -79.3832 },
+    { country: 'GB', region: 'ENG', city: 'London', lat: 51.5072, lng: -0.1276 },
+    { country: 'DE', region: 'BE', city: 'Berlin', lat: 52.52, lng: 13.405 },
+    { country: 'SE', region: 'AB', city: 'Stockholm', lat: 59.3293, lng: 18.0686 },
+    { country: 'JP', region: '13', city: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+    { country: 'BR', region: 'SP', city: 'Sao Paulo', lat: -23.5505, lng: -46.6333 },
+    { country: 'AU', region: 'NSW', city: 'Sydney', lat: -33.8688, lng: 151.2093 },
+    { country: 'MX', region: 'CMX', city: 'Mexico City', lat: 19.4326, lng: -99.1332 },
+  ];
   const telemetry: TelemetryEvent[] = [];
   for (let d = 6; d >= 0; d--) {
-    const count = 8 + (7 - d) * 3;
+    const count = 14 + (7 - d) * 4;
     for (let i = 0; i < count; i++) {
       const item = samplePaths[(d * 5 + i) % samplePaths.length];
+      // Bias ~76% toward US rock markets for realistic fanbase density
+      const geo =
+        i % 4 === 0
+          ? seedGeoPool[(d * 7 + i) % seedGeoPool.length]
+          : seedGeoPool[(d * 3 + i) % 22];
       telemetry.push({
         id: crypto.randomUUID(),
         session_id: `seed-sess-${d}-${Math.floor(i / 2)}`,
@@ -132,8 +180,12 @@ function buildInitialSeed(): LocalStoreSchema {
         referrer: i % 3 === 0 ? 'instagram.com' : i % 3 === 1 ? 'google.com' : 'direct',
         utm_source: i % 4 === 0 ? 'instagram' : '',
         device_type: devices[(d + i) % devices.length],
-        country: 'US',
-        city: i % 2 === 0 ? 'New York' : 'Los Angeles',
+        country: geo.country,
+        region: geo.region,
+        city: geo.city,
+        latitude: geo.lat,
+        longitude: geo.lng,
+        postal_code: '',
         created_at: new Date(now - d * 86400000 - i * 1800000).toISOString(),
       });
     }
@@ -779,7 +831,24 @@ export async function recordTelemetry(
 ): Promise<void> {
   if (isSupabaseConfigured()) {
     const sb = getSupabase();
-    const { error } = await sb.from('telemetry_events').insert(event);
+    let { error } = await sb.from('telemetry_events').insert(event);
+    // Graceful fallback if the new geo columns haven't been added in Supabase yet
+    if (error && /region|latitude|longitude|postal_code/i.test(error.message)) {
+      const legacy = {
+        session_id: event.session_id,
+        event_type: event.event_type,
+        path: event.path,
+        target_label: event.target_label,
+        target_url: event.target_url,
+        referrer: event.referrer,
+        utm_source: event.utm_source,
+        device_type: event.device_type,
+        country: event.country,
+        city: event.city,
+      };
+      const retry = await sb.from('telemetry_events').insert(legacy);
+      error = retry.error;
+    }
     if (error) console.error('Supabase telemetry insert error:', error.message);
     return;
   }
@@ -871,6 +940,243 @@ export async function getAnalyticsSummary(days = 7) {
     if (e.event_type === 'click' || e.event_type === 'video_play') bucket.clicks += 1;
   }
 
+  // ==================== GEO INTELLIGENCE AGGREGATION ====================
+  type CityBucket = {
+    city: string;
+    region: string;
+    country: string;
+    countryName: string;
+    lat: number;
+    lng: number;
+    views: number;
+    clicks: number;
+    mobileViews: number;
+    desktopViews: number;
+    sessions: Set<string>;
+    lastSeen: string;
+  };
+  type StateBucket = {
+    code: string;
+    name: string;
+    views: number;
+    clicks: number;
+    mobileViews: number;
+    desktopViews: number;
+    sessions: Set<string>;
+    cityCounts: Map<string, number>;
+  };
+  type CountryBucket = {
+    code: string;
+    name: string;
+    views: number;
+    clicks: number;
+    mobileViews: number;
+    desktopViews: number;
+    sessions: Set<string>;
+  };
+
+  const cityMap = new Map<string, CityBucket>();
+  const stateMap = new Map<string, StateBucket>();
+  const countryMap = new Map<string, CountryBucket>();
+  const recentPings: Array<{
+    city: string;
+    region: string;
+    country: string;
+    lat: number;
+    lng: number;
+    eventType: string;
+    deviceType: string;
+    path: string;
+    createdAt: string;
+  }> = [];
+
+  for (const e of events) {
+    const country = (e.country || '').trim().toUpperCase();
+    if (!country || country === 'LOCAL') continue;
+
+    let region = (e.region || '').trim().toUpperCase();
+    const city = (e.city || '').trim();
+    let lat = typeof e.latitude === 'number' && Number.isFinite(e.latitude) ? e.latitude : null;
+    let lng = typeof e.longitude === 'number' && Number.isFinite(e.longitude) ? e.longitude : null;
+
+    if (lat === null || lng === null || (country === 'US' && !region)) {
+      const fb = resolveFallbackGeo(city, region, country);
+      if (fb) {
+        if (lat === null) lat = fb.lat;
+        if (lng === null) lng = fb.lng;
+        if (!region && fb.region) region = fb.region;
+      }
+    }
+
+    const isView = e.event_type === 'pageview';
+    const isClick = e.event_type === 'click' || e.event_type === 'video_play';
+    const isMobile = e.device_type === 'mobile' || e.device_type === 'tablet';
+
+    // Country aggregation
+    let cb = countryMap.get(country);
+    if (!cb) {
+      cb = {
+        code: country,
+        name: getCountryName(country),
+        views: 0,
+        clicks: 0,
+        mobileViews: 0,
+        desktopViews: 0,
+        sessions: new Set(),
+      };
+      countryMap.set(country, cb);
+    }
+    cb.sessions.add(e.session_id);
+    if (isView) {
+      cb.views += 1;
+      if (isMobile) cb.mobileViews += 1;
+      else cb.desktopViews += 1;
+    }
+    if (isClick) cb.clicks += 1;
+
+    // US State aggregation
+    if (country === 'US' && region && region.length === 2) {
+      let sb = stateMap.get(region);
+      if (!sb) {
+        sb = {
+          code: region,
+          name: getStateName(region),
+          views: 0,
+          clicks: 0,
+          mobileViews: 0,
+          desktopViews: 0,
+          sessions: new Set(),
+          cityCounts: new Map(),
+        };
+        stateMap.set(region, sb);
+      }
+      sb.sessions.add(e.session_id);
+      if (isView) {
+        sb.views += 1;
+        if (isMobile) sb.mobileViews += 1;
+        else sb.desktopViews += 1;
+      }
+      if (isClick) sb.clicks += 1;
+      if (city) sb.cityCounts.set(city, (sb.cityCounts.get(city) || 0) + 1);
+    }
+
+    // City pin aggregation
+    if (lat !== null && lng !== null) {
+      const displayCity = city || (country === 'US' && region ? getStateName(region) : getCountryName(country));
+      const key = `${displayCity.toLowerCase()}|${region}|${country}`;
+      let kb = cityMap.get(key);
+      if (!kb) {
+        kb = {
+          city: displayCity,
+          region,
+          country,
+          countryName: getCountryName(country),
+          lat,
+          lng,
+          views: 0,
+          clicks: 0,
+          mobileViews: 0,
+          desktopViews: 0,
+          sessions: new Set(),
+          lastSeen: e.created_at,
+        };
+        cityMap.set(key, kb);
+      }
+      kb.sessions.add(e.session_id);
+      if (isView) {
+        kb.views += 1;
+        if (isMobile) kb.mobileViews += 1;
+        else kb.desktopViews += 1;
+      }
+      if (isClick) kb.clicks += 1;
+      if (e.created_at > kb.lastSeen) kb.lastSeen = e.created_at;
+
+      if (recentPings.length < 24) {
+        recentPings.push({
+          city: displayCity,
+          region,
+          country,
+          lat,
+          lng,
+          eventType: e.event_type,
+          deviceType: e.device_type,
+          path: e.path,
+          createdAt: e.created_at,
+        });
+      }
+    }
+  }
+
+  const totalGeoViews = Math.max(
+    1,
+    [...countryMap.values()].reduce((acc, c) => acc + c.views, 0)
+  );
+
+  const countries = [...countryMap.values()]
+    .map((c) => ({
+      code: c.code,
+      name: c.name,
+      views: c.views,
+      clicks: c.clicks,
+      mobileViews: c.mobileViews,
+      desktopViews: c.desktopViews,
+      sessions: c.sessions.size,
+      pct: Math.round((c.views / totalGeoViews) * 100),
+    }))
+    .sort((a, b) => b.views + b.clicks - (a.views + a.clicks));
+
+  const usStates = [...stateMap.values()]
+    .map((s) => {
+      let topCity = '';
+      let topCount = 0;
+      for (const [cName, cnt] of s.cityCounts.entries()) {
+        if (cnt > topCount) {
+          topCount = cnt;
+          topCity = cName;
+        }
+      }
+      return {
+        code: s.code,
+        name: s.name,
+        views: s.views,
+        clicks: s.clicks,
+        mobileViews: s.mobileViews,
+        desktopViews: s.desktopViews,
+        sessions: s.sessions.size,
+        topCity,
+      };
+    })
+    .sort((a, b) => b.views + b.clicks - (a.views + a.clicks));
+
+  const cities = [...cityMap.values()]
+    .map((c) => {
+      const nearest = nearestTourStop(c.lat, c.lng);
+      return {
+        city: c.city,
+        region: c.region,
+        country: c.country,
+        countryName: c.countryName,
+        lat: c.lat,
+        lng: c.lng,
+        views: c.views,
+        clicks: c.clicks,
+        mobileViews: c.mobileViews,
+        desktopViews: c.desktopViews,
+        sessions: c.sessions.size,
+        lastSeen: c.lastSeen,
+        nearestStopCity: `${nearest.stop.city}, ${nearest.stop.region}`,
+        nearestStopMiles: nearest.miles,
+      };
+    })
+    .sort((a, b) => b.views + b.clicks - (a.views + a.clicks))
+    .slice(0, 150);
+
+  const tourOpportunities = cities
+    .filter((c) => (c.country === 'US' || c.country === 'CA') && c.nearestStopMiles >= 100)
+    .slice(0, 15);
+
+  const usTotalViews = countries.find((c) => c.code === 'US')?.views || 0;
+
   return {
     days,
     totalPageviews: pageviews.length,
@@ -886,6 +1192,18 @@ export async function getAnalyticsSummary(days = 7) {
     topClicks,
     topSources,
     recentEvents: events.slice(0, 25),
+    geo: {
+      totalCountries: countries.length,
+      totalUsStates: usStates.length,
+      totalCities: cities.length,
+      usSharePct: Math.round((usTotalViews / totalGeoViews) * 100),
+      countries,
+      usStates,
+      cities,
+      tourOpportunities,
+      tourStops: TOUR_STOPS_GEO,
+      recentPings,
+    },
   };
 }
 

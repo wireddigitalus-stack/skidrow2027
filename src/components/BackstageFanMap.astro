@@ -1,0 +1,1405 @@
+---
+// Skid Row Backstage Command — Interactive 3D Globe, Flat World & USA 50-State Fanbase Map
+// Zero external API keys — pure vector TopoJSON + d3-geo on HiDPI Canvas
+---
+
+<div id="fan-map-module" class="border border-white/15 bg-coal">
+  <!-- Header & Primary Projection Filters -->
+  <div class="border-b border-white/10 bg-obsidian/70 px-4 py-4 sm:px-5">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 border border-crimson/60 bg-crimson/15 px-2 py-0.5 font-mono-meta text-[10px] font-bold tracking-[0.18em] text-crimson uppercase">
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-crimson"></span>
+            Live Geo Radar
+          </span>
+          <h2 class="font-display text-2xl tracking-wide text-white uppercase sm:text-3xl">
+            Worldwide &amp; USA Fanbase Map
+          </h2>
+        </div>
+        <p id="geo-summary-line" class="font-mono-meta mt-1 text-[11px] text-ash uppercase">
+          Automatic IP &amp; cellular city telemetry • Loading visitor map…
+        </p>
+      </div>
+
+      <!-- Map View Mode Switcher: 3D Globe | Flat World | USA States -->
+      <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Map view mode">
+        <button
+          type="button"
+          data-map-mode="globe"
+          class="map-mode-btn border border-crimson bg-crimson px-3 py-1.5 font-mono-meta text-[11px] font-bold tracking-wider text-white uppercase transition-colors"
+        >
+          3D Globe
+        </button>
+        <button
+          type="button"
+          data-map-mode="flat-world"
+          class="map-mode-btn border border-white/20 bg-coal px-3 py-1.5 font-mono-meta text-[11px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Flat World
+        </button>
+        <button
+          type="button"
+          data-map-mode="usa"
+          class="map-mode-btn border border-white/20 bg-coal px-3 py-1.5 font-mono-meta text-[11px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          USA States
+        </button>
+      </div>
+    </div>
+
+    <!-- Secondary Filter Row: Traffic Segment + Overlay Toggles + Globe Camera Presets -->
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-2.5 border-t border-white/10 pt-3">
+      <!-- Traffic Filter Pills -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="font-mono-meta mr-1 text-[10px] tracking-widest text-ash uppercase">Filter:</span>
+        <button
+          type="button"
+          data-geo-filter="all"
+          class="geo-filter-btn border border-white/30 bg-white/10 px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-white uppercase transition-colors"
+        >
+          All Fans
+        </button>
+        <button
+          type="button"
+          data-geo-filter="mobile"
+          class="geo-filter-btn border border-white/15 bg-obsidian px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Mobile / Cell
+        </button>
+        <button
+          type="button"
+          data-geo-filter="desktop"
+          class="geo-filter-btn border border-white/15 bg-obsidian px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Desktop
+        </button>
+        <button
+          type="button"
+          data-geo-filter="clicks"
+          class="geo-filter-btn border border-white/15 bg-obsidian px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+        >
+          Ticket Clickers
+        </button>
+      </div>
+
+      <!-- Right Controls: Tour Stops Overlay + Globe Region Jump + Spin -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          id="toggle-tour-overlay"
+          class="border border-amber-400/70 bg-amber-500/15 px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-amber-300 uppercase transition-colors hover:bg-amber-500/25"
+        >
+          &#9733; 2027 Tour Stops: ON
+        </button>
+
+        <div id="globe-region-controls" class="flex flex-wrap items-center gap-1">
+          <button type="button" data-preset="usa" class="geo-preset-btn border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] text-chalk uppercase hover:border-crimson hover:text-white">USA</button>
+          <button type="button" data-preset="europe" class="geo-preset-btn border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] text-chalk uppercase hover:border-crimson hover:text-white">Europe</button>
+          <button type="button" data-preset="latam" class="geo-preset-btn border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] text-chalk uppercase hover:border-crimson hover:text-white">LATAM</button>
+          <button type="button" data-preset="apac" class="geo-preset-btn border border-white/15 bg-obsidian px-2 py-1 font-mono-meta text-[10px] text-chalk uppercase hover:border-crimson hover:text-white">APAC</button>
+          <button
+            type="button"
+            id="toggle-globe-spin"
+            class="border border-crimson/60 bg-crimson/15 px-2 py-1 font-mono-meta text-[10px] font-bold text-crimson uppercase hover:bg-crimson hover:text-white"
+          >
+            Spin: ON
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid: Interactive Map Stage (Left 8 cols) + Live Geo Breakdown Drawer (Right 4 cols) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12">
+    <!-- Map Canvas Container -->
+    <div class="relative flex flex-col border-b border-white/10 bg-[#050507] lg:col-span-8 lg:border-r lg:border-b-0">
+      <!-- Active State Drill-down Pill (shown when a US state is clicked) -->
+      <div
+        id="selected-state-banner"
+        class="pointer-events-auto absolute top-3 left-3 z-20 hidden items-center gap-2 border border-crimson bg-obsidian/95 px-3 py-1.5 font-mono-meta text-[11px] text-white shadow-xl backdrop-blur"
+      >
+        <span class="h-2 w-2 rounded-full bg-crimson"></span>
+        <span id="selected-state-label">Filtering: Texas</span>
+        <button
+          type="button"
+          id="clear-state-filter"
+          class="ml-1 border border-white/20 px-1.5 py-0.5 text-[10px] text-ash hover:border-crimson hover:text-white"
+        >
+          Clear &times;
+        </button>
+      </div>
+
+      <!-- Zoom Controls (Bottom Right of Canvas) -->
+      <div id="map-zoom-controls" class="absolute right-3 bottom-14 z-20 flex flex-col gap-1">
+        <button
+          type="button"
+          id="map-zoom-in"
+          title="Zoom in"
+          class="flex h-8 w-8 items-center justify-center border border-white/20 bg-obsidian/90 font-mono-meta text-sm font-bold text-white backdrop-blur hover:border-crimson hover:bg-crimson"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          id="map-zoom-out"
+          title="Zoom out"
+          class="flex h-8 w-8 items-center justify-center border border-white/20 bg-obsidian/90 font-mono-meta text-sm font-bold text-white backdrop-blur hover:border-crimson hover:bg-crimson"
+        >
+          &minus;
+        </button>
+        <button
+          type="button"
+          id="map-zoom-reset"
+          title="Reset camera"
+          class="flex h-8 w-8 items-center justify-center border border-white/20 bg-obsidian/90 font-mono-meta text-[10px] font-bold text-ash backdrop-blur hover:border-crimson hover:text-white"
+        >
+          1x
+        </button>
+      </div>
+
+      <!-- Interactive HiDPI Canvas -->
+      <div id="fan-map-stage" class="relative h-[370px] w-full select-none sm:h-[460px] lg:h-[510px]">
+        <canvas
+          id="fan-map-canvas"
+          class="h-full w-full cursor-grab active:cursor-grabbing"
+          aria-label="Interactive Skid Row Worldwide and USA Fan Map"
+        ></canvas>
+
+        <!-- Hover HUD Tooltip -->
+        <div
+          id="fan-map-tooltip"
+          class="pointer-events-none absolute top-0 left-0 z-30 hidden max-w-[240px] border border-crimson/80 bg-obsidian/95 px-3 py-2.5 text-xs shadow-[0_10px_30px_rgba(0,0,0,0.85)] backdrop-blur-md"
+        ></div>
+      </div>
+
+      <!-- Bottom Legend & Micro KPIs Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-obsidian/90 px-4 py-2.5 font-mono-meta text-[10px] text-ash uppercase">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="h-2.5 w-2.5 rounded-full bg-crimson shadow-[0_0_8px_#e21c21]"></span>
+            Fan City
+          </span>
+          <span class="inline-flex items-center gap-1.5 text-amber-300">
+            <span class="text-xs leading-none">&#9733;</span>
+            2027 Tour Stop
+          </span>
+          <span class="hidden items-center gap-1 sm:inline-flex">
+            Heat:
+            <span class="inline-block h-2 w-3 bg-[#1a1a22]"></span>
+            <span class="inline-block h-2 w-3 bg-[#4c1015]"></span>
+            <span class="inline-block h-2 w-3 bg-[#8e141a]"></span>
+            <span class="inline-block h-2 w-3 bg-[#e21c21]"></span>
+          </span>
+        </div>
+        <span id="map-interaction-hint" class="text-[10px] text-ash/80">
+          Drag to spin globe • Click any city or US state
+        </span>
+      </div>
+    </div>
+
+    <!-- Right-Side Geo Intelligence Leaderboard -->
+    <div class="flex flex-col bg-coal lg:col-span-4">
+      <!-- Sub-tabs -->
+      <div class="grid grid-cols-4 border-b border-white/10 bg-obsidian/60">
+        <button
+          type="button"
+          data-geo-tab="states"
+          class="geo-tab-btn border-b-2 border-crimson py-2.5 font-mono-meta text-[10px] font-bold tracking-wider text-white uppercase transition-colors"
+        >
+          US States
+        </button>
+        <button
+          type="button"
+          data-geo-tab="cities"
+          class="geo-tab-btn border-b-2 border-transparent py-2.5 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:text-white"
+        >
+          Cities
+        </button>
+        <button
+          type="button"
+          data-geo-tab="countries"
+          class="geo-tab-btn border-b-2 border-transparent py-2.5 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:text-white"
+        >
+          World
+        </button>
+        <button
+          type="button"
+          data-geo-tab="radar"
+          class="geo-tab-btn border-b-2 border-transparent py-2.5 font-mono-meta text-[10px] font-bold tracking-wider text-amber-300 uppercase transition-colors hover:text-amber-200"
+        >
+          Radar
+        </button>
+      </div>
+
+      <!-- Quick Search (Cities / States) -->
+      <div class="border-b border-white/10 p-3">
+        <input
+          id="geo-search-input"
+          type="search"
+          placeholder="Filter state, city, or country…"
+          autocomplete="off"
+          class="w-full border border-white/15 bg-obsidian px-3 py-1.5 font-mono-meta text-xs text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
+        />
+      </div>
+
+      <!-- Scrollable List Container -->
+      <div id="geo-list-container" class="h-[340px] flex-1 overflow-y-auto divide-y divide-white/8 lg:h-[410px]">
+        <div class="p-4 font-mono-meta text-xs text-ash">Loading geo breakdown…</div>
+      </div>
+
+      <!-- Quick Geo Footnote -->
+      <div class="border-t border-white/10 bg-obsidian/70 px-3.5 py-2 font-mono-meta text-[10px] text-ash">
+        <span id="geo-tab-note">Click any US state to drill into its cities on the map.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    geoOrthographic,
+    geoNaturalEarth1,
+    geoAlbersUsa,
+    geoPath,
+    geoGraticule10,
+    geoDistance,
+    type GeoProjection,
+  } from 'd3-geo';
+  import { feature, mesh } from 'topojson-client';
+  import worldAtlas from 'world-atlas/countries-110m.json';
+  import usAtlas from 'us-atlas/states-10m.json';
+  import { COUNTRY_BY_ISONUM, STATE_BY_CODE, STATE_BY_FIPS } from '../lib/geo';
+
+  type MapMode = 'globe' | 'flat-world' | 'usa';
+  type TrafficFilter = 'all' | 'mobile' | 'desktop' | 'clicks';
+  type GeoTab = 'states' | 'cities' | 'countries' | 'radar';
+
+  interface GeoCity {
+    city: string;
+    region: string;
+    country: string;
+    countryName: string;
+    lat: number;
+    lng: number;
+    views: number;
+    clicks: number;
+    mobileViews: number;
+    desktopViews: number;
+    sessions: number;
+    lastSeen: string;
+    nearestStopCity: string;
+    nearestStopMiles: number;
+  }
+
+  interface GeoState {
+    code: string;
+    name: string;
+    views: number;
+    clicks: number;
+    mobileViews: number;
+    desktopViews: number;
+    sessions: number;
+    topCity: string;
+  }
+
+  interface GeoCountry {
+    code: string;
+    name: string;
+    views: number;
+    clicks: number;
+    mobileViews: number;
+    desktopViews: number;
+    sessions: number;
+    pct: number;
+  }
+
+  interface TourStopGeo {
+    id: string;
+    date: string;
+    city: string;
+    region: string;
+    country: string;
+    venue: string;
+    kind: string;
+    lat: number;
+    lng: number;
+  }
+
+  interface GeoPayload {
+    totalCountries: number;
+    totalUsStates: number;
+    totalCities: number;
+    usSharePct: number;
+    countries: GeoCountry[];
+    usStates: GeoState[];
+    cities: GeoCity[];
+    tourOpportunities: GeoCity[];
+    tourStops: TourStopGeo[];
+    recentPings: Array<{
+      city: string;
+      region: string;
+      country: string;
+      lat: number;
+      lng: number;
+      eventType: string;
+      deviceType: string;
+      path: string;
+      createdAt: string;
+    }>;
+  }
+
+  const canvas = document.getElementById('fan-map-canvas') as HTMLCanvasElement | null;
+  const stage = document.getElementById('fan-map-stage');
+  const tooltipEl = document.getElementById('fan-map-tooltip');
+
+  if (canvas && stage) {
+    const ctx = canvas.getContext('2d')!;
+
+    // Decode TopoJSON geometry once
+    const worldCountriesGeo = feature(
+      worldAtlas as any,
+      (worldAtlas as any).objects.countries
+    ) as any;
+    const usStatesGeo = feature(
+      usAtlas as any,
+      (usAtlas as any).objects.states
+    ) as any;
+    const usStatesMesh = mesh(
+      usAtlas as any,
+      (usAtlas as any).objects.states,
+      (a: any, b: any) => a !== b
+    );
+    const graticule = geoGraticule10();
+
+    // State
+    let geoData: GeoPayload | null = null;
+    let mapMode: MapMode = 'globe';
+    let trafficFilter: TrafficFilter = 'all';
+    let activeTab: GeoTab = 'states';
+    let showTourOverlay = true;
+    let autoSpin = true;
+    let selectedStateCode: string | null = null;
+    let focusedCityKey: string | null = null;
+    let searchQuery = '';
+
+    // Globe rotation & zoom
+    let rotation: [number, number, number] = [96, -34, 0]; // Starts centered on USA!
+    let targetRotation: [number, number] | null = null;
+    let globeZoom = 1.08;
+    let flatZoom = 1.0;
+
+    // Pointer interaction
+    let isDragging = false;
+    let dragMoved = false;
+    let lastX = 0;
+    let lastY = 0;
+    let velX = 0;
+    let velY = 0;
+    let hoverItem: { kind: 'city' | 'tour' | 'state' | 'country'; data: any; x: number; y: number } | null = null;
+
+    // Cached screen coordinates for crisp hit-testing
+    let renderedCities: Array<{ x: number; y: number; r: number; city: GeoCity }> = [];
+    let renderedTours: Array<{ x: number; y: number; stop: TourStopGeo }> = [];
+    let currentProjection: GeoProjection | null = null;
+
+    const CAMERA_PRESETS: Record<string, [number, number]> = {
+      usa: [97, -36],
+      europe: [-10, -49],
+      latam: [62, 16],
+      apac: [-135, -18],
+    };
+
+    function esc(s: string) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function metricFor(item: { views: number; clicks: number; mobileViews: number; desktopViews: number }): number {
+      if (trafficFilter === 'mobile') return item.mobileViews;
+      if (trafficFilter === 'desktop') return item.desktopViews;
+      if (trafficFilter === 'clicks') return item.clicks;
+      return item.views + item.clicks;
+    }
+
+    function heatColor(ratio: number, dimmed = false): string {
+      if (ratio <= 0) return dimmed ? '#0d0d11' : '#16161d';
+      if (dimmed) return '#271316';
+      if (ratio < 0.2) return '#421014';
+      if (ratio < 0.45) return '#6f1218';
+      if (ratio < 0.72) return '#a8151b';
+      return '#e21c21';
+    }
+
+    function resizeCanvas() {
+      const rect = stage!.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(300, Math.round(rect.width));
+      const h = Math.max(300, Math.round(rect.height));
+      if (canvas!.width !== Math.round(w * dpr) || canvas!.height !== Math.round(h * dpr)) {
+        canvas!.width = Math.round(w * dpr);
+        canvas!.height = Math.round(h * dpr);
+      }
+      return { w, h, dpr };
+    }
+
+    function getStateMetricMap() {
+      const map = new Map<string, number>();
+      if (!geoData) return { map, max: 1 };
+      let max = 1;
+      for (const st of geoData.usStates) {
+        const val = metricFor(st);
+        map.set(st.code, val);
+        if (val > max) max = val;
+      }
+      return { map, max };
+    }
+
+    function getCountryMetricMap() {
+      const map = new Map<string, number>();
+      if (!geoData) return { map, max: 1 };
+      let max = 1;
+      for (const co of geoData.countries) {
+        const val = metricFor(co);
+        map.set(co.code, val);
+        if (val > max) max = val;
+      }
+      return { map, max };
+    }
+
+    function drawStar(cx: number, cy: number, outerR: number, innerR: number) {
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        const a = (Math.PI / 5) * i - Math.PI / 2;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    }
+
+    function drawFrame(nowMs: number) {
+      const { w, h, dpr } = resizeCanvas();
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      // Clear background with subtle dark obsidian radial
+      const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.48, 20, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
+      bgGrad.addColorStop(0, '#10090b');
+      bgGrad.addColorStop(0.55, '#070709');
+      bgGrad.addColorStop(1, '#040406');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Smoothly animate globe rotation
+      if (mapMode === 'globe') {
+        if (targetRotation) {
+          const [tLng, tLat] = targetRotation;
+          let dLng = tLng - rotation[0];
+          if (dLng > 180) dLng -= 360;
+          if (dLng < -180) dLng += 360;
+          const dLat = tLat - rotation[1];
+          rotation[0] += dLng * 0.1;
+          rotation[1] += dLat * 0.1;
+          if (Math.abs(dLng) < 0.25 && Math.abs(dLat) < 0.25) {
+            rotation[0] = tLng;
+            rotation[1] = tLat;
+            targetRotation = null;
+          }
+        } else if (!isDragging) {
+          if (Math.abs(velX) > 0.01 || Math.abs(velY) > 0.01) {
+            rotation[0] += velX;
+            rotation[1] = Math.max(-68, Math.min(68, rotation[1] + velY));
+            velX *= 0.92;
+            velY *= 0.92;
+          } else if (autoSpin && !hoverItem) {
+            rotation[0] -= 0.11;
+          }
+        }
+      }
+
+      const { map: stateMetricMap, max: maxState } = getStateMetricMap();
+      const { map: countryMetricMap, max: maxCountry } = getCountryMetricMap();
+      renderedCities = [];
+      renderedTours = [];
+
+      const pulsePhase = (nowMs % 2200) / 2200;
+
+      if (mapMode === 'globe') {
+        const radius = Math.min(w, h) * 0.415 * globeZoom;
+        const projection = geoOrthographic()
+          .scale(radius)
+          .translate([w / 2, h / 2])
+          .rotate(rotation)
+          .clipAngle(90);
+        currentProjection = projection;
+        const path = geoPath(projection, ctx);
+
+        // Outer crimson atmospheric rim glow
+        const halo = ctx.createRadialGradient(w / 2, h / 2, radius * 0.88, w / 2, h / 2, radius * 1.14);
+        halo.addColorStop(0, 'rgba(226, 28, 33, 0.20)');
+        halo.addColorStop(0.55, 'rgba(226, 28, 33, 0.07)');
+        halo.addColorStop(1, 'rgba(226, 28, 33, 0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, radius * 1.14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ocean sphere
+        const sphereGrad = ctx.createRadialGradient(
+          w / 2 - radius * 0.28,
+          h / 2 - radius * 0.28,
+          radius * 0.1,
+          w / 2,
+          h / 2,
+          radius
+        );
+        sphereGrad.addColorStop(0, '#16161f');
+        sphereGrad.addColorStop(0.65, '#0b0b10');
+        sphereGrad.addColorStop(1, '#060609');
+        ctx.beginPath();
+        path({ type: 'Sphere' });
+        ctx.fillStyle = sphereGrad;
+        ctx.fill();
+
+        // Subtle graticule lines
+        ctx.beginPath();
+        path(graticule);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.045)';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+
+        // Countries shaded by visitor heat
+        for (const feat of worldCountriesGeo.features) {
+          const isoNum = String(feat.id || '').padStart(3, '0');
+          const cMeta = COUNTRY_BY_ISONUM.get(isoNum);
+          const val = cMeta ? countryMetricMap.get(cMeta.code) || 0 : 0;
+          ctx.beginPath();
+          path(feat);
+          ctx.fillStyle =
+            cMeta?.code === 'US'
+              ? '#241418'
+              : heatColor(val > 0 ? Math.sqrt(val / maxCountry) : 0);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+
+        // Overlay US States inside the USA on the 3D Globe!
+        for (const stFeat of usStatesGeo.features) {
+          const fips = String(stFeat.id || '').padStart(2, '0');
+          const stMeta = STATE_BY_FIPS.get(fips);
+          const val = stMeta ? stateMetricMap.get(stMeta.code) || 0 : 0;
+          const isSelected = selectedStateCode && stMeta?.code === selectedStateCode;
+          ctx.beginPath();
+          path(stFeat);
+          ctx.fillStyle = heatColor(
+            val > 0 ? Math.sqrt(val / maxState) : 0,
+            Boolean(selectedStateCode && !isSelected)
+          );
+          ctx.fill();
+          ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.22)';
+          ctx.lineWidth = isSelected ? 1.4 : 0.45;
+          ctx.stroke();
+        }
+
+        // Crisp sphere outer border
+        ctx.beginPath();
+        path({ type: 'Sphere' });
+        ctx.strokeStyle = 'rgba(226, 28, 33, 0.45)';
+        ctx.lineWidth = 1.25;
+        ctx.stroke();
+
+        // Draw markers visible on the front hemisphere
+        const centerGeo: [number, number] = [-rotation[0], -rotation[1]];
+        drawMarkers(projection, pulsePhase, (lng, lat) => geoDistance([lng, lat], centerGeo) < Math.PI / 2 - 0.03);
+      } else if (mapMode === 'flat-world') {
+        const projection = geoNaturalEarth1().fitExtent(
+          [
+            [18, 22],
+            [w - 18, h - 18],
+          ],
+          { type: 'Sphere' }
+        );
+        if (flatZoom > 1) {
+          projection.scale(projection.scale() * flatZoom);
+        }
+        currentProjection = projection;
+        const path = geoPath(projection, ctx);
+
+        // Flat world backdrop
+        ctx.beginPath();
+        path({ type: 'Sphere' });
+        ctx.fillStyle = '#09090d';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Graticule
+        ctx.beginPath();
+        path(graticule);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        // Countries
+        for (const feat of worldCountriesGeo.features) {
+          const isoNum = String(feat.id || '').padStart(3, '0');
+          const cMeta = COUNTRY_BY_ISONUM.get(isoNum);
+          const val = cMeta ? countryMetricMap.get(cMeta.code) || 0 : 0;
+          ctx.beginPath();
+          path(feat);
+          ctx.fillStyle =
+            cMeta?.code === 'US'
+              ? '#261418'
+              : heatColor(val > 0 ? Math.sqrt(val / maxCountry) : 0);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+          ctx.lineWidth = 0.55;
+          ctx.stroke();
+        }
+
+        // US states heat inside USA
+        for (const stFeat of usStatesGeo.features) {
+          const fips = String(stFeat.id || '').padStart(2, '0');
+          const stMeta = STATE_BY_FIPS.get(fips);
+          const val = stMeta ? stateMetricMap.get(stMeta.code) || 0 : 0;
+          const isSelected = selectedStateCode && stMeta?.code === selectedStateCode;
+          ctx.beginPath();
+          path(stFeat);
+          ctx.fillStyle = heatColor(
+            val > 0 ? Math.sqrt(val / maxState) : 0,
+            Boolean(selectedStateCode && !isSelected)
+          );
+          ctx.fill();
+          ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.18)';
+          ctx.lineWidth = isSelected ? 1.2 : 0.35;
+          ctx.stroke();
+        }
+
+        drawMarkers(projection, pulsePhase, () => true);
+      } else {
+        // USA 50-STATE ALBERS PROJECTION
+        const projection = geoAlbersUsa().fitExtent(
+          [
+            [20, 22],
+            [w - 20, h - 18],
+          ],
+          usStatesGeo
+        );
+        if (flatZoom > 1) {
+          projection.scale(projection.scale() * flatZoom);
+        }
+        currentProjection = projection;
+        const path = geoPath(projection, ctx);
+
+        // Subtle tactical grid behind USA
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+        ctx.lineWidth = 1;
+        for (let gx = 0; gx < w; gx += 40) {
+          ctx.beginPath();
+          ctx.moveTo(gx, 0);
+          ctx.lineTo(gx, h);
+          ctx.stroke();
+        }
+        for (let gy = 0; gy < h; gy += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, gy);
+          ctx.lineTo(w, gy);
+          ctx.stroke();
+        }
+
+        // Draw all 50 US states
+        for (const stFeat of usStatesGeo.features) {
+          const fips = String(stFeat.id || '').padStart(2, '0');
+          const stMeta = STATE_BY_FIPS.get(fips);
+          const val = stMeta ? stateMetricMap.get(stMeta.code) || 0 : 0;
+          const isSelected = selectedStateCode && stMeta?.code === selectedStateCode;
+          const isHovered = hoverItem?.kind === 'state' && hoverItem.data?.code === stMeta?.code;
+
+          ctx.beginPath();
+          path(stFeat);
+          ctx.fillStyle = heatColor(
+            val > 0 ? Math.sqrt(val / maxState) : 0,
+            Boolean(selectedStateCode && !isSelected)
+          );
+          ctx.fill();
+          ctx.strokeStyle = isSelected
+            ? '#ffffff'
+            : isHovered
+              ? '#ff5a5f'
+              : 'rgba(255, 255, 255, 0.25)';
+          ctx.lineWidth = isSelected ? 2 : isHovered ? 1.5 : 0.85;
+          ctx.stroke();
+        }
+
+        // Crisp state interior mesh
+        ctx.beginPath();
+        path(usStatesMesh);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+
+        // Subtle state abbreviations for readability
+        ctx.font = '700 9px "Space Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const skipTiny = new Set(['RI', 'DE', 'DC', 'CT', 'MD', 'MA', 'NH', 'VT', 'NJ', 'HI']);
+        for (const stFeat of usStatesGeo.features) {
+          const fips = String(stFeat.id || '').padStart(2, '0');
+          const stMeta = STATE_BY_FIPS.get(fips);
+          if (!stMeta || skipTiny.has(stMeta.code)) continue;
+          const centroid = path.centroid(stFeat);
+          if (!Number.isFinite(centroid[0]) || !Number.isFinite(centroid[1])) continue;
+          const val = stateMetricMap.get(stMeta.code) || 0;
+          ctx.fillStyle = val > 0 ? 'rgba(255, 255, 255, 0.65)' : 'rgba(255, 255, 255, 0.24)';
+          ctx.fillText(stMeta.code, centroid[0], centroid[1]);
+        }
+
+        drawMarkers(projection, pulsePhase, (_lng, _lat, country) => country === 'US');
+      }
+
+      ctx.restore();
+      requestAnimationFrame(drawFrame);
+    }
+
+    function drawMarkers(
+      projection: GeoProjection,
+      pulsePhase: number,
+      isVisible: (lng: number, lat: number, country: string) => boolean
+    ) {
+      if (!geoData) return;
+
+      // 1. Optional 2027 Tour Route dashed polyline + Gold Star Stops
+      if (showTourOverlay && geoData.tourStops?.length) {
+        const pts: Array<[number, number]> = [];
+        for (const stop of geoData.tourStops) {
+          if (!isVisible(stop.lng, stop.lat, stop.country)) continue;
+          const xy = projection([stop.lng, stop.lat]);
+          if (xy) {
+            pts.push(xy);
+            renderedTours.push({ x: xy[0], y: xy[1], stop });
+          }
+        }
+
+        if (pts.length > 1) {
+          ctx.save();
+          ctx.beginPath();
+          pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+          ctx.lineWidth = 1.1;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // 2. Fan Visitor City Pins
+      const filteredCities = geoData.cities.filter((c) => {
+        if (metricFor(c) <= 0) return false;
+        if (mapMode === 'usa' && c.country !== 'US') return false;
+        if (selectedStateCode && (c.country !== 'US' || c.region !== selectedStateCode)) return false;
+        return isVisible(c.lng, c.lat, c.country);
+      });
+
+      const maxCityVal = Math.max(1, ...filteredCities.map((c) => metricFor(c)));
+
+      filteredCities.forEach((city, idx) => {
+        const xy = projection([city.lng, city.lat]);
+        if (!xy) return;
+        const [x, y] = xy;
+        const val = metricFor(city);
+        const norm = Math.sqrt(val / maxCityVal);
+        const r = 3.2 + norm * (mapMode === 'usa' ? 6.5 : 5.2);
+        const key = `${city.city}|${city.region}|${city.country}`;
+        const isFocused = focusedCityKey === key;
+
+        // Animated sonar pulse on top 8 hotspots or focused city
+        if (idx < 8 || isFocused) {
+          const offsetPhase = (pulsePhase + idx * 0.13) % 1;
+          const pulseR = r + offsetPhase * (isFocused ? 22 : 14);
+          ctx.beginPath();
+          ctx.arc(x, y, pulseR, 0, Math.PI * 2);
+          ctx.strokeStyle = isFocused
+            ? `rgba(255, 255, 255, ${(1 - offsetPhase) * 0.9})`
+            : `rgba(226, 28, 33, ${(1 - offsetPhase) * 0.7})`;
+          ctx.lineWidth = isFocused ? 1.8 : 1.2;
+          ctx.stroke();
+        }
+
+        // Outer glow
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 2.4);
+        glow.addColorStop(0, 'rgba(226, 28, 33, 0.85)');
+        glow.addColorStop(0.5, 'rgba(226, 28, 33, 0.28)');
+        glow.addColorStop(1, 'rgba(226, 28, 33, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Core dot
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = isFocused ? '#ffffff' : '#ff2930';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = isFocused ? 1.8 : 0.9;
+        ctx.stroke();
+
+        // Label top 5 cities on USA view or focused city
+        if (isFocused || (mapMode === 'usa' && idx < 5)) {
+          ctx.font = '700 10px "Space Mono", monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          const label = city.region ? `${city.city}, ${city.region}` : city.city;
+          ctx.fillStyle = 'rgba(5, 5, 7, 0.85)';
+          const tw = ctx.measureText(label).width;
+          ctx.fillRect(x + r + 4, y - 8, tw + 8, 16);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(label, x + r + 8, y);
+        }
+
+        renderedCities.push({ x, y, r: Math.max(r + 4, 9), city });
+      });
+
+      // 3. Draw Gold Stars for 2027 Tour Stops on top so they stay clickable
+      if (showTourOverlay) {
+        for (const t of renderedTours) {
+          drawStar(t.x, t.y, 7.2, 3.2);
+          ctx.fillStyle = '#f59e0b';
+          ctx.fill();
+          ctx.strokeStyle = '#fffbeb';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+
+    function showTooltip(html: string, x: number, y: number) {
+      if (!tooltipEl || !stage) return;
+      tooltipEl.innerHTML = html;
+      tooltipEl.classList.remove('hidden');
+      const rect = stage.getBoundingClientRect();
+      const tw = tooltipEl.offsetWidth || 210;
+      const th = tooltipEl.offsetHeight || 90;
+      const left = x + 16 + tw > rect.width ? Math.max(8, x - tw - 14) : x + 16;
+      const top = y + 14 + th > rect.height ? Math.max(8, y - th - 14) : y + 14;
+      tooltipEl.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+    }
+
+    function hideTooltip() {
+      tooltipEl?.classList.add('hidden');
+      hoverItem = null;
+    }
+
+    function hitTest(px: number, py: number) {
+      // 1. Check 2027 Tour Stars first
+      if (showTourOverlay) {
+        for (const t of renderedTours) {
+          if (Math.hypot(px - t.x, py - t.y) <= 10) {
+            return { kind: 'tour' as const, data: t.stop, x: px, y: py };
+          }
+        }
+      }
+
+      // 2. Check Fan City markers (closest first)
+      let bestCity: { city: GeoCity; dist: number } | null = null;
+      for (const c of renderedCities) {
+        const d = Math.hypot(px - c.x, py - c.y);
+        if (d <= c.r && (!bestCity || d < bestCity.dist)) {
+          bestCity = { city: c.city, dist: d };
+        }
+      }
+      if (bestCity) {
+        return { kind: 'city' as const, data: bestCity.city, x: px, y: py };
+      }
+
+      // 3. Check US State polygon in USA mode
+      if (mapMode === 'usa' && currentProjection?.invert && geoData) {
+        const geoPt = currentProjection.invert([px, py]);
+        if (geoPt) {
+          // Point-in-polygon check via path2D / hit canvas is fast with d3 geoContains,
+          // or approximate via state polygon bounding box + ctx.isPointInPath
+          const path = geoPath(currentProjection);
+          for (const stFeat of usStatesGeo.features) {
+            const pathStr = path(stFeat);
+            if (!pathStr) continue;
+            const p2d = new Path2D(pathStr);
+            if (ctx.isPointInPath(p2d, px, py)) {
+              const fips = String(stFeat.id || '').padStart(2, '0');
+              const meta = STATE_BY_FIPS.get(fips);
+              if (meta) {
+                const stat = geoData.usStates.find((s) => s.code === meta.code);
+                return {
+                  kind: 'state' as const,
+                  data: {
+                    code: meta.code,
+                    name: meta.name,
+                    views: stat?.views || 0,
+                    clicks: stat?.clicks || 0,
+                    sessions: stat?.sessions || 0,
+                    topCity: stat?.topCity || '',
+                  },
+                  x: px,
+                  y: py,
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function updateHover(clientX: number, clientY: number) {
+      const rect = canvas!.getBoundingClientRect();
+      const px = clientX - rect.left;
+      const py = clientY - rect.top;
+      const hit = hitTest(px, py);
+      hoverItem = hit;
+
+      if (!hit) {
+        canvas!.style.cursor = mapMode === 'globe' ? 'grab' : 'default';
+        hideTooltip();
+        return;
+      }
+
+      canvas!.style.cursor = 'pointer';
+      if (hit.kind === 'city') {
+        const c = hit.data as GeoCity;
+        const mobPct = c.views ? Math.round((c.mobileViews / c.views) * 100) : 0;
+        const title = c.region ? `${c.city}, ${c.region}` : `${c.city}, ${c.country}`;
+        showTooltip(
+          `<div class="font-mono-meta text-[10px] font-bold tracking-wider text-crimson uppercase">Fan Hotspot • ${esc(c.countryName)}</div>
+           <div class="font-display mt-0.5 text-lg leading-tight text-white uppercase">${esc(title)}</div>
+           <div class="mt-1.5 grid grid-cols-3 gap-2 border-t border-white/10 pt-1.5 font-mono-meta text-[10px]">
+             <div><span class="text-ash">Views</span><div class="font-bold text-white">${c.views}</div></div>
+             <div><span class="text-ash">Clicks</span><div class="font-bold text-crimson">${c.clicks}</div></div>
+             <div><span class="text-ash">Cell/Mob</span><div class="font-bold text-white">${mobPct}%</div></div>
+           </div>
+           <div class="mt-1.5 font-mono-meta text-[9px] text-ash">Nearest 2027 Show: ${esc(c.nearestStopCity)} (${c.nearestStopMiles} mi)</div>`,
+          px,
+          py
+        );
+      } else if (hit.kind === 'tour') {
+        const s = hit.data as TourStopGeo;
+        showTooltip(
+          `<div class="font-mono-meta text-[10px] font-bold tracking-wider text-amber-300 uppercase">&#9733; 2027 ${esc(s.kind)} Show</div>
+           <div class="font-display mt-0.5 text-lg leading-tight text-white uppercase">${esc(s.city)}, ${esc(s.region)}</div>
+           <div class="mt-1 text-[11px] text-chalk">${esc(s.venue)}</div>
+           <div class="font-mono-meta mt-0.5 text-[10px] text-ash">${esc(s.date)}</div>`,
+          px,
+          py
+        );
+      } else if (hit.kind === 'state') {
+        const st = hit.data;
+        showTooltip(
+          `<div class="font-mono-meta text-[10px] font-bold tracking-wider text-crimson uppercase">US State • Click to Drill In</div>
+           <div class="font-display mt-0.5 text-lg leading-tight text-white uppercase">${esc(st.name)} (${esc(st.code)})</div>
+           <div class="mt-1.5 grid grid-cols-3 gap-2 border-t border-white/10 pt-1.5 font-mono-meta text-[10px]">
+             <div><span class="text-ash">Views</span><div class="font-bold text-white">${st.views}</div></div>
+             <div><span class="text-ash">Sessions</span><div class="font-bold text-white">${st.sessions}</div></div>
+             <div><span class="text-ash">Clicks</span><div class="font-bold text-crimson">${st.clicks}</div></div>
+           </div>
+           ${st.topCity ? `<div class="mt-1 font-mono-meta text-[9px] text-ash">Top City: ${esc(st.topCity)}</div>` : ''}`,
+          px,
+          py
+        );
+      }
+    }
+
+    // Pointer Events (Mouse + Touch drag on 3D Globe + Click drill-down)
+    canvas.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      dragMoved = false;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      velX = 0;
+      velY = 0;
+      targetRotation = null;
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (isDragging && mapMode === 'globe') {
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragMoved = true;
+        const sens = 0.34 / globeZoom;
+        rotation[0] += dx * sens;
+        rotation[1] = Math.max(-68, Math.min(68, rotation[1] - dy * sens));
+        velX = dx * sens * 0.5;
+        velY = -dy * sens * 0.5;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        hideTooltip();
+        return;
+      }
+      if (!isDragging) updateHover(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      const wasDrag = dragMoved;
+      isDragging = false;
+      canvas.releasePointerCapture(e.pointerId);
+      if (wasDrag) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+      if (!hit) return;
+
+      if (hit.kind === 'state') {
+        selectUsState(hit.data.code);
+      } else if (hit.kind === 'city') {
+        const c = hit.data as GeoCity;
+        focusCity(c);
+      }
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+      if (!isDragging) hideTooltip();
+    });
+
+    function selectUsState(code: string | null) {
+      selectedStateCode = selectedStateCode === code ? null : code;
+      const banner = document.getElementById('selected-state-banner');
+      const label = document.getElementById('selected-state-label');
+      if (selectedStateCode) {
+        const st = STATE_BY_CODE.get(selectedStateCode);
+        if (label) label.textContent = `State Drill-Down: ${st?.name || selectedStateCode} (${selectedStateCode})`;
+        banner?.classList.remove('hidden');
+        banner?.classList.add('flex');
+        setGeoTab('cities');
+        if (mapMode === 'globe' && st) {
+          targetRotation = [-st.lng, -st.lat];
+          setAutoSpin(false);
+        }
+      } else {
+        banner?.classList.add('hidden');
+        banner?.classList.remove('flex');
+      }
+      renderLeaderboard();
+    }
+
+    function focusCity(c: GeoCity) {
+      focusedCityKey = `${c.city}|${c.region}|${c.country}`;
+      if (mapMode === 'globe') {
+        targetRotation = [-c.lng, -c.lat];
+        setAutoSpin(false);
+      }
+      renderLeaderboard();
+    }
+
+    function setMapMode(mode: MapMode) {
+      mapMode = mode;
+      hideTooltip();
+      document.querySelectorAll<HTMLButtonElement>('.map-mode-btn').forEach((btn) => {
+        const active = btn.dataset.mapMode === mode;
+        btn.classList.toggle('border-crimson', active);
+        btn.classList.toggle('bg-crimson', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('border-white/20', !active);
+        btn.classList.toggle('bg-coal', !active);
+        btn.classList.toggle('text-ash', !active);
+      });
+
+      const globeControls = document.getElementById('globe-region-controls');
+      globeControls?.classList.toggle('hidden', mode !== 'globe');
+      globeControls?.classList.toggle('flex', mode === 'globe');
+
+      const hint = document.getElementById('map-interaction-hint');
+      if (hint) {
+        hint.textContent =
+          mode === 'globe'
+            ? 'Drag to spin 3D globe • Click any glowing city pin'
+            : mode === 'usa'
+              ? 'Click any US state to drill into its cities • Hover dots for stats'
+              : 'Flat world projection • Hover any city or 2027 tour star';
+      }
+    }
+
+    function setAutoSpin(val: boolean) {
+      autoSpin = val;
+      const btn = document.getElementById('toggle-globe-spin');
+      if (btn) {
+        btn.textContent = val ? 'Spin: ON' : 'Spin: OFF';
+        btn.classList.toggle('bg-crimson/15', val);
+        btn.classList.toggle('text-crimson', val);
+        btn.classList.toggle('border-crimson/60', val);
+        btn.classList.toggle('bg-obsidian', !val);
+        btn.classList.toggle('text-ash', !val);
+        btn.classList.toggle('border-white/15', !val);
+      }
+    }
+
+    function setGeoTab(tab: GeoTab) {
+      activeTab = tab;
+      document.querySelectorAll<HTMLButtonElement>('.geo-tab-btn').forEach((b) => {
+        const active = b.dataset.geoTab === tab;
+        b.classList.toggle('border-crimson', active);
+        b.classList.toggle('border-transparent', !active);
+        if (b.dataset.geoTab !== 'radar') {
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('text-ash', !active);
+        }
+      });
+      const note = document.getElementById('geo-tab-note');
+      if (note) {
+        note.textContent =
+          tab === 'states'
+            ? 'Click any US state to drill into its cities & highlight on the map.'
+            : tab === 'cities'
+              ? 'Click any city to focus & pulse its exact coordinates on the map.'
+              : tab === 'countries'
+                ? 'Global traffic share automatically resolved via Vercel Edge IP Geo.'
+                : 'Hot US/Canada fan cities 100+ miles from any scheduled 2027 concert.';
+      }
+      renderLeaderboard();
+    }
+
+    function renderLeaderboard() {
+      const container = document.getElementById('geo-list-container');
+      if (!container || !geoData) return;
+      const q = searchQuery.trim().toLowerCase();
+
+      if (activeTab === 'states') {
+        const rows = geoData.usStates
+          .map((s) => ({ ...s, val: metricFor(s) }))
+          .filter((s) => s.val > 0 && (!q || s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) || s.topCity.toLowerCase().includes(q)))
+          .sort((a, b) => b.val - a.val);
+
+        if (!rows.length) {
+          container.innerHTML = `<div class="p-4 font-mono-meta text-xs text-ash">No US state traffic for this filter yet.</div>`;
+          return;
+        }
+        const maxVal = Math.max(1, rows[0].val);
+        container.innerHTML = rows
+          .map((s, idx) => {
+            const pct = Math.round((s.val / maxVal) * 100);
+            const isSel = selectedStateCode === s.code;
+            return `<button type="button" data-pick-state="${esc(s.code)}" class="w-full px-3.5 py-2.5 text-left transition-colors hover:bg-asphalt ${isSel ? 'bg-crimson/15' : ''}">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <span class="font-mono-meta mr-1.5 text-[10px] text-ash">#${idx + 1}</span>
+                  <span class="font-display text-base tracking-wide text-white uppercase">${esc(s.name)}</span>
+                  <span class="font-mono-meta ml-1 text-[10px] text-crimson">${esc(s.code)}</span>
+                </div>
+                <span class="font-mono-meta shrink-0 text-xs font-bold text-white">${s.val}</span>
+              </div>
+              <div class="mt-1.5 h-1.5 w-full bg-obsidian">
+                <div class="h-full bg-gradient-to-r from-[#7f0d12] to-crimson" style="width:${Math.max(6, pct)}%"></div>
+              </div>
+              <div class="mt-1 flex items-center justify-between font-mono-meta text-[10px] text-ash">
+                <span>${s.topCity ? `Top: ${esc(s.topCity)}` : `${s.sessions} sessions`}</span>
+                <span>${s.views} views • ${s.clicks} clicks</span>
+              </div>
+            </button>`;
+          })
+          .join('');
+      } else if (activeTab === 'cities') {
+        const rows = geoData.cities
+          .map((c) => ({ ...c, val: metricFor(c) }))
+          .filter((c) => {
+            if (c.val <= 0) return false;
+            if (selectedStateCode && (c.country !== 'US' || c.region !== selectedStateCode)) return false;
+            if (!q) return true;
+            return (
+              c.city.toLowerCase().includes(q) ||
+              c.region.toLowerCase().includes(q) ||
+              c.countryName.toLowerCase().includes(q)
+            );
+          })
+          .sort((a, b) => b.val - a.val)
+          .slice(0, 60);
+
+        if (!rows.length) {
+          container.innerHTML = `<div class="p-4 font-mono-meta text-xs text-ash">No cities match this filter yet.</div>`;
+          return;
+        }
+
+        container.innerHTML = rows
+          .map((c) => {
+            const key = `${c.city}|${c.region}|${c.country}`;
+            const active = focusedCityKey === key;
+            const loc = c.region ? `${c.region}, ${c.country}` : c.countryName;
+            return `<button type="button" data-pick-city="${esc(key)}" class="w-full px-3.5 py-2.5 text-left transition-colors hover:bg-asphalt ${active ? 'border-l-2 border-crimson bg-crimson/15' : ''}">
+              <div class="flex items-center justify-between gap-2">
+                <span class="truncate text-xs font-semibold text-white">${esc(c.city)} <span class="font-mono-meta text-[10px] font-normal text-ash">${esc(loc)}</span></span>
+                <span class="font-mono-meta shrink-0 text-xs font-bold text-crimson">${c.val}</span>
+              </div>
+              <div class="mt-0.5 flex items-center justify-between font-mono-meta text-[10px] text-ash">
+                <span>${c.views} views • ${c.clicks} clicks</span>
+                <span>${c.sessions} sess</span>
+              </div>
+            </button>`;
+          })
+          .join('');
+      } else if (activeTab === 'countries') {
+        const rows = geoData.countries
+          .map((c) => ({ ...c, val: metricFor(c) }))
+          .filter((c) => c.val > 0 && (!q || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)))
+          .sort((a, b) => b.val - a.val);
+
+        if (!rows.length) {
+          container.innerHTML = `<div class="p-4 font-mono-meta text-xs text-ash">No country traffic for this filter yet.</div>`;
+          return;
+        }
+        const total = Math.max(1, rows.reduce((acc, r) => acc + r.val, 0));
+        container.innerHTML = rows
+          .map((c) => {
+            const share = Math.round((c.val / total) * 100);
+            return `<div class="px-3.5 py-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-semibold text-white">${esc(c.name)} <span class="font-mono-meta text-[10px] text-ash">${esc(c.code)}</span></span>
+                <span class="font-mono-meta text-xs font-bold text-white">${share}% <span class="text-ash">(${c.val})</span></span>
+              </div>
+              <div class="mt-1.5 h-1.5 w-full bg-obsidian">
+                <div class="h-full bg-crimson" style="width:${Math.max(4, share)}%"></div>
+              </div>
+            </div>`;
+          })
+          .join('');
+      } else {
+        // Untapped Tour Radar (>100 mi from nearest 2027 show)
+        const rows = (geoData.tourOpportunities || [])
+          .map((c) => ({ ...c, val: metricFor(c) }))
+          .filter((c) => c.val > 0 && (!q || c.city.toLowerCase().includes(q) || c.region.toLowerCase().includes(q)))
+          .sort((a, b) => b.val - a.val);
+
+        if (!rows.length) {
+          container.innerHTML = `<div class="p-4 font-mono-meta text-xs text-ash">No untapped US/CA markets found for this filter yet.</div>`;
+          return;
+        }
+        container.innerHTML = rows
+          .map((c) => {
+            const key = `${c.city}|${c.region}|${c.country}`;
+            return `<button type="button" data-pick-city="${esc(key)}" class="w-full px-3.5 py-2.5 text-left transition-colors hover:bg-asphalt">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-semibold text-white">${esc(c.city)}, ${esc(c.region)}</span>
+                <span class="font-mono-meta border border-amber-400/50 bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">${c.val} hits</span>
+              </div>
+              <div class="mt-1 font-mono-meta text-[10px] text-ash">
+                ${c.nearestStopMiles} mi from nearest 2027 show (${esc(c.nearestStopCity)})
+              </div>
+            </button>`;
+          })
+          .join('');
+      }
+    }
+
+    // Event bindings
+    document.querySelectorAll<HTMLButtonElement>('.map-mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setMapMode((btn.dataset.mapMode as MapMode) || 'globe'));
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('.geo-filter-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        trafficFilter = (btn.dataset.geoFilter as TrafficFilter) || 'all';
+        document.querySelectorAll<HTMLButtonElement>('.geo-filter-btn').forEach((b) => {
+          const active = b === btn;
+          b.classList.toggle('border-white/30', active);
+          b.classList.toggle('bg-white/10', active);
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('border-white/15', !active);
+          b.classList.toggle('bg-obsidian', !active);
+          b.classList.toggle('text-ash', !active);
+        });
+        renderLeaderboard();
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('.geo-tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setGeoTab((btn.dataset.geoTab as GeoTab) || 'states'));
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('.geo-preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const preset = CAMERA_PRESETS[btn.dataset.preset || 'usa'];
+        if (preset) {
+          targetRotation = [...preset];
+          setAutoSpin(false);
+        }
+      });
+    });
+
+    document.getElementById('toggle-globe-spin')?.addEventListener('click', () => setAutoSpin(!autoSpin));
+
+    document.getElementById('toggle-tour-overlay')?.addEventListener('click', (e) => {
+      showTourOverlay = !showTourOverlay;
+      const btn = e.currentTarget as HTMLButtonElement;
+      btn.innerHTML = showTourOverlay ? '&#9733; 2027 Tour Stops: ON' : '&#9733; 2027 Tour Stops: OFF';
+      btn.classList.toggle('border-amber-400/70', showTourOverlay);
+      btn.classList.toggle('bg-amber-500/15', showTourOverlay);
+      btn.classList.toggle('text-amber-300', showTourOverlay);
+      btn.classList.toggle('border-white/15', !showTourOverlay);
+      btn.classList.toggle('bg-obsidian', !showTourOverlay);
+      btn.classList.toggle('text-ash', !showTourOverlay);
+    });
+
+    document.getElementById('clear-state-filter')?.addEventListener('click', () => selectUsState(null));
+
+    document.getElementById('map-zoom-in')?.addEventListener('click', () => {
+      if (mapMode === 'globe') globeZoom = Math.min(2.4, globeZoom * 1.22);
+      else flatZoom = Math.min(2.2, flatZoom * 1.2);
+    });
+    document.getElementById('map-zoom-out')?.addEventListener('click', () => {
+      if (mapMode === 'globe') globeZoom = Math.max(0.78, globeZoom / 1.22);
+      else flatZoom = Math.max(1.0, flatZoom / 1.2);
+    });
+    document.getElementById('map-zoom-reset')?.addEventListener('click', () => {
+      globeZoom = 1.08;
+      flatZoom = 1.0;
+      targetRotation = [96, -34];
+      selectUsState(null);
+      focusedCityKey = null;
+    });
+
+    document.getElementById('geo-search-input')?.addEventListener('input', (e) => {
+      searchQuery = (e.target as HTMLInputElement).value;
+      renderLeaderboard();
+    });
+
+    document.getElementById('geo-list-container')?.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const stateBtn = target.closest<HTMLButtonElement>('[data-pick-state]');
+      if (stateBtn?.dataset.pickState) {
+        selectUsState(stateBtn.dataset.pickState);
+        return;
+      }
+      const cityBtn = target.closest<HTMLButtonElement>('[data-pick-city]');
+      if (cityBtn?.dataset.pickCity && geoData) {
+        const key = cityBtn.dataset.pickCity;
+        const found = geoData.cities.find((c) => `${c.city}|${c.region}|${c.country}` === key);
+        if (found) focusCity(found);
+      }
+    });
+
+    function applyGeoData(payload: GeoPayload) {
+      geoData = payload;
+      const summary = document.getElementById('geo-summary-line');
+      if (summary) {
+        summary.textContent = `${payload.totalUsStates} US States • ${payload.totalCities} Cities • ${payload.totalCountries} Countries (${payload.usSharePct}% USA Traffic)`;
+      }
+      renderLeaderboard();
+    }
+
+    (window as any).__updateBackstageFanMap = applyGeoData;
+    window.addEventListener('skidrow:geo-update', ((e: CustomEvent<GeoPayload>) => {
+      if (e.detail) applyGeoData(e.detail);
+    }) as EventListener);
+
+    // If analytics already loaded before this module finished initializing
+    if ((window as any).__latestBackstageGeo) {
+      applyGeoData((window as any).__latestBackstageGeo);
+    }
+
+    requestAnimationFrame(drawFrame);
+  }
+</script>

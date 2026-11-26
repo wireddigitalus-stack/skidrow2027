@@ -39,6 +39,20 @@ export const POST: APIRoute = async ({ request }) => {
       } catch {}
     }
 
+    const rawCountry = (request.headers.get('x-vercel-ip-country') || 'LOCAL').trim().toUpperCase().slice(0, 8);
+    const rawRegion = (request.headers.get('x-vercel-ip-country-region') || '').trim().toUpperCase().slice(0, 16);
+    let rawCity = '';
+    try {
+      rawCity = decodeURIComponent(request.headers.get('x-vercel-ip-city') || '').trim().slice(0, 100);
+    } catch {
+      rawCity = (request.headers.get('x-vercel-ip-city') || '').trim().slice(0, 100);
+    }
+    const rawLat = Number(request.headers.get('x-vercel-ip-latitude'));
+    const rawLng = Number(request.headers.get('x-vercel-ip-longitude'));
+    const latitude = Number.isFinite(rawLat) && request.headers.get('x-vercel-ip-latitude') ? rawLat : null;
+    const longitude = Number.isFinite(rawLng) && request.headers.get('x-vercel-ip-longitude') ? rawLng : null;
+    const postalCode = (request.headers.get('x-vercel-ip-postal-code') || '').trim().slice(0, 20);
+
     await recordTelemetry({
       session_id: String(body.sessionId || 'anon').slice(0, 64),
       event_type: eventType,
@@ -48,8 +62,12 @@ export const POST: APIRoute = async ({ request }) => {
       referrer: referrerHost,
       utm_source: String(body.utmSource || '').slice(0, 80),
       device_type: deviceType,
-      country: request.headers.get('x-vercel-ip-country') || 'LOCAL',
-      city: decodeURIComponent(request.headers.get('x-vercel-ip-city') || ''),
+      country: rawCountry,
+      region: rawRegion,
+      city: rawCity,
+      latitude,
+      longitude,
+      postal_code: postalCode,
     });
 
     return new Response(null, { status: 204 });
