@@ -9,12 +9,13 @@ import { SITE } from '../data/site';
 const featured = VIDEOS.find((v) => v.featured) ?? VIDEOS[0];
 const rest = VIDEOS.filter((v) => v.id !== featured.id);
 const youtubeChannel = SITE.socials.find((s) => s.id === 'youtube')?.url ?? '#';
+const defaultCategory = 'Official Video';
 const categories = [
-  { value: 'All', label: `All (${rest.length})` },
   { value: 'Official Video', label: 'Official Videos' },
   { value: 'Live in London', label: 'Live in London' },
   { value: 'Lyric Video', label: 'Lyric Videos' },
   { value: 'Feature', label: 'Features' },
+  { value: 'All', label: `All (${rest.length})` },
 ] as const;
 ---
 
@@ -95,27 +96,33 @@ const categories = [
             </p>
           </div>
           <div class="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-            {categories.map((cat, idx) => (
-              <button
-                type="button"
-                data-vcat={cat.value}
-                class:list={[
-                  'video-filter-btn min-h-10 shrink-0 border px-3.5 font-mono-meta text-xs font-bold tracking-wider uppercase transition-colors',
-                  idx === 0
-                    ? 'border-crimson bg-crimson text-white'
-                    : 'border-white/20 bg-coal text-ash hover:border-crimson hover:text-white',
-                ]}
-              >
-                {cat.label}
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const isDefault = cat.value === defaultCategory;
+              return (
+                <button
+                  type="button"
+                  data-vcat={cat.value}
+                  class:list={[
+                    'video-filter-btn min-h-10 shrink-0 border px-3.5 font-mono-meta text-xs font-bold tracking-wider uppercase transition-colors',
+                    isDefault
+                      ? 'border-crimson bg-crimson text-white'
+                      : 'border-white/20 bg-coal text-ash hover:border-crimson hover:text-white',
+                  ]}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {rest.map((video) => (
             <article
-              class="video-card flex flex-col border border-white/10 bg-coal transition-colors hover:border-crimson/60"
+              class:list={[
+                'video-card flex flex-col border border-white/10 bg-coal transition-colors hover:border-crimson/60',
+                video.category !== defaultCategory && 'hidden',
+              ]}
               data-category={video.category}
             >
               <YouTubeFacade
