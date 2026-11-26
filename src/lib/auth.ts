@@ -14,8 +14,9 @@ interface RateLimitEntry {
 const rateLimitMap = new Map<string, RateLimitEntry>();
 
 function getEnv(key: string, fallback = ''): string {
+  const fromProc = process.env[key];
   const fromImport = (import.meta.env as Record<string, string | undefined>)[key];
-  return fromImport || process.env[key] || fallback;
+  return (fromProc || fromImport || fallback).trim();
 }
 
 export function getConfiguredPin(): string {

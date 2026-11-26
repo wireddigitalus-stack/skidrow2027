@@ -1,5 +1,4 @@
 ---
-import { SITE } from '../data/site';
 import Icons from './Icons.astro';
 
 interface Props {
@@ -32,7 +31,6 @@ const { compact = false } = Astro.props;
 
     <form
       class="sr-signup-form mx-auto mt-7 max-w-2xl border border-black/40 bg-black/85 p-5 shadow-2xl backdrop-blur-sm sm:p-7"
-      data-mailerlite-url={SITE.mailerLiteUrl}
     >
       <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         <div>
@@ -59,7 +57,7 @@ const { compact = false } = Astro.props;
             class="min-h-12 w-full border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
           />
         </div>
-        <div>
+        <div class="sm:col-span-2">
           <label class="font-mono-meta mb-1.5 block text-[11px] tracking-wider text-ash uppercase">
             Email <span class="text-crimson">*</span>
           </label>
@@ -84,6 +82,18 @@ const { compact = false } = Astro.props;
             class="min-h-12 w-full border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
           />
         </div>
+        <div>
+          <label class="font-mono-meta mb-1.5 block text-[11px] tracking-wider text-ash uppercase">
+            ZIP / Postal Code (Local Tour Alerts)
+          </label>
+          <input
+            type="text"
+            name="zipCode"
+            autocomplete="postal-code"
+            placeholder="e.g., 08753"
+            class="min-h-12 w-full border border-white/20 bg-coal px-3.5 text-sm text-white placeholder:text-ash/60 focus:border-crimson focus:outline-none"
+          />
+        </div>
       </div>
 
       <label class="mt-4 flex cursor-pointer items-start gap-2.5 text-xs text-ash sm:text-sm">
@@ -93,27 +103,21 @@ const { compact = false } = Astro.props;
           class="mt-0.5 h-4 w-4 shrink-0 accent-crimson"
         />
         <span>
-          Yes, subscribe me to Skid Row news, tour pre-sale alerts, and exclusive updates.
+          Yes, subscribe me to Skid Row news, 2027 tour pre-sale alerts, and exclusive updates.
         </span>
       </label>
 
-      <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="submit"
-          class="btn-crimson w-full sm:w-auto sm:min-w-48"
+          class="btn-crimson w-full sm:w-auto sm:min-w-52"
         >
           <Icons name="mail" class="h-4 w-4" />
           Join the Rebellion
         </button>
-        <a
-          href={SITE.mailerLiteUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="font-mono-meta inline-flex items-center justify-center gap-1.5 text-xs text-ash underline decoration-white/30 underline-offset-4 transition-colors hover:text-white"
-        >
-          Open official MailerLite pre-sale form
-          <Icons name="external" class="h-3.5 w-3.5" />
-        </a>
+        <span class="font-mono-meta text-center text-[10px] tracking-wider text-ash/80 uppercase sm:text-right">
+          Zero spam • Unsubscribe anytime
+        </span>
       </div>
 
       <div
@@ -135,9 +139,9 @@ const { compact = false } = Astro.props;
       const firstName = String(data.get('firstName') || '').trim();
       const lastName = String(data.get('lastName') || '').trim();
       const phone = String(data.get('phone') || '').trim();
+      const zipCode = String(data.get('zipCode') || '').trim();
       const feedback = form.querySelector<HTMLElement>('.sr-signup-feedback');
       const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-      const mailerLiteUrl = form.dataset.mailerliteUrl || '';
 
       const params = new URLSearchParams(window.location.search);
       let sessionId = 'signup';
@@ -159,6 +163,7 @@ const { compact = false } = Astro.props;
             lastName,
             email,
             phone,
+            zipCode,
             sourcePage: window.location.pathname,
             utmSource: params.get('utm_source') || '',
             utmCampaign: params.get('utm_campaign') || '',
@@ -173,7 +178,7 @@ const { compact = false } = Astro.props;
         if (feedback) {
           feedback.className =
             'sr-signup-feedback mt-4 border border-emerald-500/40 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-200';
-          feedback.innerHTML = `<strong>You're on the list${firstName ? `, ${firstName}` : ''}!</strong> We registered <code>${email}</code> for 2027 pre-sale codes &amp; updates. <a href="${mailerLiteUrl}" target="_blank" rel="noopener noreferrer" class="underline font-semibold text-white">Also verify on MailerLite →</a>`;
+          feedback.innerHTML = `<strong>You're on the list${firstName ? `, ${firstName}` : ''}!</strong> We registered <code>${email}</code> for 2027 pre-sale codes, local tour alerts, and official Skid Row dispatches.`;
         }
         form.reset();
       } catch (err: any) {

@@ -10,10 +10,14 @@ export interface LeadRecord {
   last_name: string;
   email: string;
   phone: string;
+  zip_code: string;
   source_page: string;
   utm_source: string;
   utm_campaign: string;
   status: 'active' | 'vip' | 'unsubscribed';
+  mailerlite_status: 'pending' | 'synced' | 'error';
+  mailerlite_synced_at?: string | null;
+  mailerlite_error: string;
   notes: string;
   created_at: string;
 }
@@ -55,12 +59,17 @@ interface LocalStoreSchema {
 }
 
 function getEnv(key: string): string {
+  const fromProc = process.env[key];
   const fromImport = (import.meta.env as Record<string, string | undefined>)[key];
-  return (fromImport || process.env[key] || '').trim();
+  return (fromProc || fromImport || '').trim();
 }
 
 export function isSupabaseConfigured(): boolean {
   return Boolean(getEnv('SUPABASE_URL') && getEnv('SUPABASE_SERVICE_ROLE_KEY'));
+}
+
+export function isMailerLiteConfigured(): boolean {
+  return Boolean(getEnv('MAILERLITE_API_KEY'));
 }
 
 let cachedClient: SupabaseClient | null = null;
@@ -74,6 +83,14 @@ function getSupabase(): SupabaseClient {
 }
 
 const LOCAL_DB_PATH = path.resolve(process.cwd(), '.data/store.json');
+let localQueue: Promise<unknown> = Promise.resolve();
+let memoryCache: LocalStoreSchema | null = null;
+
+function withLocalLock<T>(fn: () => Promise<T>): Promise<T> {
+  const next = localQueue.then(fn, fn);
+  localQueue = next.catch(() => {});
+  return next;
+}
 
 function buildInitialSeed(): LocalStoreSchema {
   const now = Date.now();
@@ -84,7 +101,6 @@ function buildInitialSeed(): LocalStoreSchema {
     updated_at: new Date(p.isoDate).toISOString(),
   }));
 
-  // Seed realistic initial telemetry so charts aren't blank on first local boot
   const samplePaths = [
     { path: '/', label: '', type: 'pageview' as const },
     { path: '/tour', label: '', type: 'pageview' as const },
@@ -103,7 +119,7 @@ function buildInitialSeed(): LocalStoreSchema {
   ];
   const telemetry: TelemetryEvent[] = [];
   for (let d = 6; d >= 0; d--) {
-    const count = 8 + ((7 - d) * 3);
+    const count = 8 + (7 - d) * 3;
     for (let i = 0; i < count; i++) {
       const item = samplePaths[(d * 5 + i) % samplePaths.length];
       telemetry.push({
@@ -139,20 +155,103 @@ function buildInitialSeed(): LocalStoreSchema {
   };
 }
 
-async function readLocalStore(): Promise<LocalStoreSchema> {
+async function readLocalStoreUnlocked(): Promise<LocalStoreSchema> {
+  if (memoryCache) return memoryCache;
   try {
     const raw = await fs.readFile(LOCAL_DB_PATH, 'utf8');
-    return JSON.parse(raw) as LocalStoreSchema;
-  } catch {
-    const seed = buildInitialSeed();
-    await writeLocalStore(seed);
-    return seed;
+    const parsed = JSON.parse(raw) as LocalStoreSchema;
+    memoryCache = parsed;
+    return parsed;
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') {
+      const seed = buildInitialSeed();
+      await writeLocalStoreUnlocked(seed);
+      return seed;
+    }
+    // Never wipe an existing store file on transient error
+    const fallback = buildInitialSeed();
+    return fallback;
   }
 }
 
-async function writeLocalStore(data: LocalStoreSchema): Promise<void> {
+async function writeLocalStoreUnlocked(data: LocalStoreSchema): Promise<void> {
+  memoryCache = data;
   await fs.mkdir(path.dirname(LOCAL_DB_PATH), { recursive: true });
-  await fs.writeFile(LOCAL_DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+  const tmpPath = `${LOCAL_DB_PATH}.${process.pid}.${Date.now()}.tmp`;
+  await fs.writeFile(tmpPath, JSON.stringify(data, null, 2), 'utf8');
+  await fs.rename(tmpPath, LOCAL_DB_PATH);
+}
+
+/* ===========================
+   DATABASE HEALTH DIAGNOSTICS
+   =========================== */
+
+export async function getDatabaseHealth() {
+  if (!isSupabaseConfigured()) {
+    return withLocalLock(async () => {
+      const store = await readLocalStoreUnlocked();
+      return {
+        connected: true,
+        backend: 'Local Dev Store (.data/store.json)',
+        isSupabase: false,
+        error: '',
+        counts: {
+          leads: store.leads.length,
+          news_posts: store.posts.length,
+          telemetry_events: store.telemetry.length,
+          admin_audit_logs: store.audit.length,
+        },
+      };
+    });
+  }
+
+  try {
+    const sb = getSupabase();
+    const [leadsRes, postsRes, teleRes, auditRes] = await Promise.all([
+      sb.from('leads').select('*', { count: 'exact', head: true }),
+      sb.from('news_posts').select('*', { count: 'exact', head: true }),
+      sb.from('telemetry_events').select('*', { count: 'exact', head: true }),
+      sb.from('admin_audit_logs').select('*', { count: 'exact', head: true }),
+    ]);
+
+    const firstErr =
+      leadsRes.error || postsRes.error || teleRes.error || auditRes.error;
+    if (firstErr) {
+      return {
+        connected: false,
+        backend: 'Supabase Postgres',
+        isSupabase: true,
+        error: firstErr.message,
+        counts: {
+          leads: leadsRes.count ?? 0,
+          news_posts: postsRes.count ?? 0,
+          telemetry_events: teleRes.count ?? 0,
+          admin_audit_logs: auditRes.count ?? 0,
+        },
+      };
+    }
+
+    return {
+      connected: true,
+      backend: 'Supabase Postgres',
+      isSupabase: true,
+      error: '',
+      counts: {
+        leads: leadsRes.count ?? 0,
+        news_posts: postsRes.count ?? 0,
+        telemetry_events: teleRes.count ?? 0,
+        admin_audit_logs: auditRes.count ?? 0,
+      },
+    };
+  } catch (err: any) {
+    return {
+      connected: false,
+      backend: 'Supabase Postgres',
+      isSupabase: true,
+      error: err?.message || 'Unable to reach Supabase',
+      counts: { leads: 0, news_posts: 0, telemetry_events: 0, admin_audit_logs: 0 },
+    };
+  }
 }
 
 /* ===========================
@@ -170,7 +269,9 @@ function mapSupabasePost(row: Record<string, any>): ManagedPost {
     category: row.category || 'Band News',
     image: row.image_url || '/images/hero-band.jpg',
     excerpt: row.excerpt || '',
-    body: Array.isArray(row.body) ? row.body : String(row.body || '').split(/\n{2,}/).filter(Boolean),
+    body: Array.isArray(row.body)
+      ? row.body
+      : String(row.body || '').split(/\n{2,}/).filter(Boolean),
     ctaLabel: row.cta_label || undefined,
     ctaUrl: row.cta_url || undefined,
     tags: Array.isArray(row.tags) ? row.tags : [],
@@ -197,11 +298,13 @@ export async function listPosts(includeDrafts = false): Promise<ManagedPost[]> {
     return data.map(mapSupabasePost);
   }
 
-  const store = await readLocalStore();
-  const filtered = includeDrafts
-    ? store.posts
-    : store.posts.filter((p) => p.status === 'published');
-  return [...filtered].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+  return withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    const filtered = includeDrafts
+      ? store.posts
+      : store.posts.filter((p) => p.status === 'published');
+    return [...filtered].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+  });
 }
 
 export async function getPostBySlug(slug: string, includeDrafts = false): Promise<ManagedPost | null> {
@@ -225,13 +328,15 @@ export async function upsertPost(input: {
   tags: string[];
   status: 'published' | 'draft';
 }): Promise<ManagedPost> {
-  const cleanSlug = input.slug
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/^-+|-+$/g, '') || `post-${Date.now()}`;
+  const cleanSlug =
+    input.slug
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-+|-+$/g, '') || `post-${Date.now()}`;
 
   const wordCount = input.body.join(' ').split(/\s+/).filter(Boolean).length;
-  const computedReadTime = input.readTime || `${Math.max(1, Math.round(wordCount / 200))} min read`;
+  const computedReadTime =
+    input.readTime || `${Math.max(1, Math.round(wordCount / 200))} min read`;
 
   if (isSupabaseConfigured()) {
     const sb = getSupabase();
@@ -272,34 +377,36 @@ export async function upsertPost(input: {
     return mapSupabasePost(data);
   }
 
-  const store = await readLocalStore();
-  const existingIdx = store.posts.findIndex(
-    (p) => (input.id && p.id === input.id) || p.slug === cleanSlug
-  );
-  const record: ManagedPost = {
-    id: existingIdx >= 0 ? store.posts[existingIdx].id : crypto.randomUUID(),
-    slug: cleanSlug,
-    title: input.title,
-    date: input.date,
-    isoDate: input.isoDate,
-    readTime: computedReadTime,
-    category: input.category,
-    image: input.image || '/images/hero-band.jpg',
-    excerpt: input.excerpt,
-    body: input.body,
-    ctaLabel: input.ctaLabel || undefined,
-    ctaUrl: input.ctaUrl || undefined,
-    tags: input.tags,
-    status: input.status,
-    updated_at: new Date().toISOString(),
-  };
-  if (existingIdx >= 0) {
-    store.posts[existingIdx] = record;
-  } else {
-    store.posts.unshift(record);
-  }
-  await writeLocalStore(store);
-  return record;
+  return withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    const existingIdx = store.posts.findIndex(
+      (p) => (input.id && p.id === input.id) || p.slug === cleanSlug
+    );
+    const record: ManagedPost = {
+      id: existingIdx >= 0 ? store.posts[existingIdx].id : crypto.randomUUID(),
+      slug: cleanSlug,
+      title: input.title,
+      date: input.date,
+      isoDate: input.isoDate,
+      readTime: computedReadTime,
+      category: input.category,
+      image: input.image || '/images/hero-band.jpg',
+      excerpt: input.excerpt,
+      body: input.body,
+      ctaLabel: input.ctaLabel || undefined,
+      ctaUrl: input.ctaUrl || undefined,
+      tags: input.tags,
+      status: input.status,
+      updated_at: new Date().toISOString(),
+    };
+    if (existingIdx >= 0) {
+      store.posts[existingIdx] = record;
+    } else {
+      store.posts.unshift(record);
+    }
+    await writeLocalStoreUnlocked(store);
+    return record;
+  });
 }
 
 export async function deletePost(id: string): Promise<void> {
@@ -309,20 +416,109 @@ export async function deletePost(id: string): Promise<void> {
     if (error) throw new Error(error.message);
     return;
   }
-  const store = await readLocalStore();
-  store.posts = store.posts.filter((p) => p.id !== id);
-  await writeLocalStore(store);
+  await withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    store.posts = store.posts.filter((p) => p.id !== id);
+    await writeLocalStoreUnlocked(store);
+  });
 }
 
 /* ===========================
-   LEADS & NEWSLETTER CRM
+   LEADS & MAILERLITE SYNC
    =========================== */
+
+function normalizeLead(row: Record<string, any>): LeadRecord {
+  return {
+    id: row.id,
+    first_name: row.first_name || '',
+    last_name: row.last_name || '',
+    email: row.email || '',
+    phone: row.phone || '',
+    zip_code: row.zip_code || '',
+    source_page: row.source_page || '/',
+    utm_source: row.utm_source || '',
+    utm_campaign: row.utm_campaign || '',
+    status: row.status || 'active',
+    mailerlite_status: row.mailerlite_status || 'pending',
+    mailerlite_synced_at: row.mailerlite_synced_at || null,
+    mailerlite_error: row.mailerlite_error || '',
+    notes: row.notes || '',
+    created_at: row.created_at || new Date().toISOString(),
+  };
+}
+
+export async function pushLeadToMailerLite(
+  lead: LeadRecord
+): Promise<{ status: 'synced' | 'pending' | 'error'; error: string }> {
+  const mlKey = getEnv('MAILERLITE_API_KEY');
+  if (!mlKey) {
+    return { status: 'pending', error: '' };
+  }
+
+  const groupId = getEnv('MAILERLITE_GROUP_ID');
+  const fields: Record<string, string> = {};
+  if (lead.first_name) fields.name = lead.first_name;
+  if (lead.last_name) fields.last_name = lead.last_name;
+  if (lead.phone) fields.phone = lead.phone;
+  if (lead.zip_code) fields.z_i_p = lead.zip_code;
+
+  try {
+    const res = await fetch('https://connect.mailerlite.com/api/subscribers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${mlKey}`,
+      },
+      body: JSON.stringify({
+        email: lead.email,
+        fields,
+        ...(groupId ? { groups: [groupId] } : {}),
+      }),
+    });
+
+    if (res.ok) {
+      return { status: 'synced', error: '' };
+    }
+    const errText = await res.text().catch(() => `HTTP ${res.status}`);
+    return { status: 'error', error: `MailerLite HTTP ${res.status}: ${errText.slice(0, 180)}` };
+  } catch (err: any) {
+    return { status: 'error', error: err?.message || 'MailerLite network error' };
+  }
+}
+
+async function persistMailerLiteState(
+  id: string,
+  state: { status: 'synced' | 'pending' | 'error'; error: string }
+): Promise<void> {
+  const patch = {
+    mailerlite_status: state.status,
+    mailerlite_synced_at: state.status === 'synced' ? new Date().toISOString() : null,
+    mailerlite_error: state.error,
+  };
+
+  if (isSupabaseConfigured()) {
+    const sb = getSupabase();
+    await sb.from('leads').update(patch).eq('id', id);
+    return;
+  }
+
+  await withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    const idx = store.leads.findIndex((l) => l.id === id);
+    if (idx >= 0) {
+      store.leads[idx] = { ...store.leads[idx], ...patch };
+      await writeLocalStoreUnlocked(store);
+    }
+  });
+}
 
 export async function createOrUpdateLead(input: {
   first_name?: string;
   last_name?: string;
   email: string;
   phone?: string;
+  zip_code?: string;
   source_page?: string;
   utm_source?: string;
   utm_campaign?: string;
@@ -332,83 +528,127 @@ export async function createOrUpdateLead(input: {
     throw new Error('Please enter a valid email address.');
   }
 
-  // Optional MailerLite forward if configured
-  const mlKey = getEnv('MAILERLITE_API_KEY');
-  if (mlKey) {
-    const groupId = getEnv('MAILERLITE_GROUP_ID');
-    fetch('https://connect.mailerlite.com/api/subscribers', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${mlKey}`,
-      },
-      body: JSON.stringify({
-        email,
-        fields: {
-          name: input.first_name || '',
-          last_name: input.last_name || '',
-          phone: input.phone || '',
-        },
-        ...(groupId ? { groups: [groupId] } : {}),
-      }),
-    }).catch(() => {});
-  }
+  let saved: LeadRecord;
 
   if (isSupabaseConfigured()) {
     const sb = getSupabase();
-    const { data, error } = await sb
-      .from('leads')
-      .upsert(
-        {
-          email,
-          first_name: (input.first_name || '').trim(),
-          last_name: (input.last_name || '').trim(),
-          phone: (input.phone || '').trim(),
-          source_page: (input.source_page || '/').slice(0, 120),
-          utm_source: (input.utm_source || '').slice(0, 80),
-          utm_campaign: (input.utm_campaign || '').slice(0, 80),
-          status: 'active',
-        },
-        { onConflict: 'email' }
-      )
-      .select('*')
-      .single();
-    if (error) throw new Error(error.message);
-    return data as LeadRecord;
-  }
-
-  const store = await readLocalStore();
-  const idx = store.leads.findIndex((l) => l.email === email);
-  const now = new Date().toISOString();
-  if (idx >= 0) {
-    const updated: LeadRecord = {
-      ...store.leads[idx],
-      first_name: (input.first_name || store.leads[idx].first_name).trim(),
-      last_name: (input.last_name || store.leads[idx].last_name).trim(),
-      phone: (input.phone || store.leads[idx].phone).trim(),
+    const basePayload = {
+      email,
+      first_name: (input.first_name || '').trim(),
+      last_name: (input.last_name || '').trim(),
+      phone: (input.phone || '').trim(),
+      zip_code: (input.zip_code || '').trim().slice(0, 20),
+      source_page: (input.source_page || '/').slice(0, 120),
+      utm_source: (input.utm_source || '').slice(0, 80),
+      utm_campaign: (input.utm_campaign || '').slice(0, 80),
       status: 'active',
     };
-    store.leads[idx] = updated;
-    await writeLocalStore(store);
-    return updated;
+
+    let { data, error } = await sb
+      .from('leads')
+      .upsert(basePayload, { onConflict: 'email' })
+      .select('*')
+      .single();
+
+    // Graceful fallback if user hasn't run the new zip_code ALTER TABLE yet
+    if (error && /zip_code|mailerlite_/i.test(error.message)) {
+      const legacyPayload = {
+        email: basePayload.email,
+        first_name: basePayload.first_name,
+        last_name: basePayload.last_name,
+        phone: basePayload.phone,
+        source_page: basePayload.source_page,
+        utm_source: basePayload.utm_source,
+        utm_campaign: basePayload.utm_campaign,
+        status: 'active',
+      };
+      const retry = await sb
+        .from('leads')
+        .upsert(legacyPayload, { onConflict: 'email' })
+        .select('*')
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error || !data) throw new Error(error?.message || 'Could not save lead');
+    saved = normalizeLead(data);
+  } else {
+    saved = await withLocalLock(async () => {
+      const store = await readLocalStoreUnlocked();
+      const idx = store.leads.findIndex((l) => l.email === email);
+      const now = new Date().toISOString();
+      if (idx >= 0) {
+        const updated: LeadRecord = normalizeLead({
+          ...store.leads[idx],
+          first_name: (input.first_name || store.leads[idx].first_name).trim(),
+          last_name: (input.last_name || store.leads[idx].last_name).trim(),
+          phone: (input.phone || store.leads[idx].phone).trim(),
+          zip_code: (input.zip_code || store.leads[idx].zip_code || '').trim().slice(0, 20),
+          status: 'active',
+        });
+        store.leads[idx] = updated;
+        await writeLocalStoreUnlocked(store);
+        return updated;
+      }
+
+      const record: LeadRecord = {
+        id: crypto.randomUUID(),
+        first_name: (input.first_name || '').trim(),
+        last_name: (input.last_name || '').trim(),
+        email,
+        phone: (input.phone || '').trim(),
+        zip_code: (input.zip_code || '').trim().slice(0, 20),
+        source_page: (input.source_page || '/').slice(0, 120),
+        utm_source: (input.utm_source || '').slice(0, 80),
+        utm_campaign: (input.utm_campaign || '').slice(0, 80),
+        status: 'active',
+        mailerlite_status: 'pending',
+        mailerlite_synced_at: null,
+        mailerlite_error: '',
+        notes: '',
+        created_at: now,
+      };
+      store.leads.unshift(record);
+      await writeLocalStoreUnlocked(store);
+      return record;
+    });
   }
 
-  const record: LeadRecord = {
-    id: crypto.randomUUID(),
-    first_name: (input.first_name || '').trim(),
-    last_name: (input.last_name || '').trim(),
-    email,
-    phone: (input.phone || '').trim(),
-    source_page: (input.source_page || '/').slice(0, 120),
-    utm_source: (input.utm_source || '').slice(0, 80),
-    utm_campaign: (input.utm_campaign || '').slice(0, 80),
-    status: 'active',
-    notes: '',
-    created_at: now,
-  };
-  store.leads.unshift(record);
-  await writeLocalStore(store);
-  return record;
+  // Real-time MailerLite official API sync when configured
+  if (isMailerLiteConfigured()) {
+    const mlResult = await pushLeadToMailerLite(saved);
+    await persistMailerLiteState(saved.id, mlResult);
+    saved = {
+      ...saved,
+      mailerlite_status: mlResult.status,
+      mailerlite_synced_at: mlResult.status === 'synced' ? new Date().toISOString() : null,
+      mailerlite_error: mlResult.error,
+    };
+  }
+
+  return saved;
+}
+
+export async function syncPendingLeadsToMailerLite() {
+  if (!isMailerLiteConfigured()) {
+    throw new Error('MAILERLITE_API_KEY is not configured yet in your environment variables.');
+  }
+  const leads = await listLeads();
+  const targets = leads.filter(
+    (l) => l.status !== 'unsubscribed' && l.mailerlite_status !== 'synced'
+  );
+  let synced = 0;
+  let failed = 0;
+
+  for (const lead of targets) {
+    const res = await pushLeadToMailerLite(lead);
+    await persistMailerLiteState(lead.id, res);
+    if (res.status === 'synced') synced++;
+    else failed++;
+  }
+
+  return { attempted: targets.length, synced, failed };
 }
 
 export async function listLeads(): Promise<LeadRecord[]> {
@@ -420,10 +660,12 @@ export async function listLeads(): Promise<LeadRecord[]> {
       .order('created_at', { ascending: false })
       .limit(2000);
     if (error) throw new Error(error.message);
-    return (data || []) as LeadRecord[];
+    return (data || []).map(normalizeLead);
   }
-  const store = await readLocalStore();
-  return [...store.leads].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    return [...store.leads].map(normalizeLead).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  });
 }
 
 export async function updateLead(
@@ -439,14 +681,16 @@ export async function updateLead(
       .select('*')
       .single();
     if (error) throw new Error(error.message);
-    return data as LeadRecord;
+    return normalizeLead(data);
   }
-  const store = await readLocalStore();
-  const idx = store.leads.findIndex((l) => l.id === id);
-  if (idx < 0) throw new Error('Lead not found');
-  store.leads[idx] = { ...store.leads[idx], ...patch };
-  await writeLocalStore(store);
-  return store.leads[idx];
+  return withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    const idx = store.leads.findIndex((l) => l.id === id);
+    if (idx < 0) throw new Error('Lead not found');
+    store.leads[idx] = normalizeLead({ ...store.leads[idx], ...patch });
+    await writeLocalStoreUnlocked(store);
+    return store.leads[idx];
+  });
 }
 
 export async function deleteLead(id: string): Promise<void> {
@@ -456,9 +700,11 @@ export async function deleteLead(id: string): Promise<void> {
     if (error) throw new Error(error.message);
     return;
   }
-  const store = await readLocalStore();
-  store.leads = store.leads.filter((l) => l.id !== id);
-  await writeLocalStore(store);
+  await withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    store.leads = store.leads.filter((l) => l.id !== id);
+    await writeLocalStoreUnlocked(store);
+  });
 }
 
 /* ===========================
@@ -470,19 +716,22 @@ export async function recordTelemetry(
 ): Promise<void> {
   if (isSupabaseConfigured()) {
     const sb = getSupabase();
-    await sb.from('telemetry_events').insert(event);
+    const { error } = await sb.from('telemetry_events').insert(event);
+    if (error) console.error('Supabase telemetry insert error:', error.message);
     return;
   }
-  const store = await readLocalStore();
-  store.telemetry.unshift({
-    id: crypto.randomUUID(),
-    ...event,
-    created_at: new Date().toISOString(),
+  await withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    store.telemetry.unshift({
+      id: crypto.randomUUID(),
+      ...event,
+      created_at: new Date().toISOString(),
+    });
+    if (store.telemetry.length > 5000) {
+      store.telemetry = store.telemetry.slice(0, 5000);
+    }
+    await writeLocalStoreUnlocked(store);
   });
-  if (store.telemetry.length > 5000) {
-    store.telemetry = store.telemetry.slice(0, 5000);
-  }
-  await writeLocalStore(store);
 }
 
 export async function getAnalyticsSummary(days = 7) {
@@ -499,8 +748,10 @@ export async function getAnalyticsSummary(days = 7) {
       .limit(5000);
     events = (data || []) as TelemetryEvent[];
   } else {
-    const store = await readLocalStore();
-    events = store.telemetry.filter((e) => e.created_at >= cutoff);
+    events = await withLocalLock(async () => {
+      const store = await readLocalStoreUnlocked();
+      return store.telemetry.filter((e) => e.created_at >= cutoff);
+    });
   }
 
   const pageviews = events.filter((e) => e.event_type === 'pageview');
@@ -542,7 +793,6 @@ export async function getAnalyticsSummary(days = 7) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 
-  // Daily trend buckets
   const daily: Array<{ date: string; label: string; pageviews: number; clicks: number }> = [];
   for (let i = days - 1; i >= 0; i--) {
     const dt = new Date(Date.now() - i * 86400000);
@@ -586,16 +836,18 @@ export async function logAdminAction(action: string, details: string, ip: string
     await sb.from('admin_audit_logs').insert({ action, details, ip });
     return;
   }
-  const store = await readLocalStore();
-  store.audit.unshift({
-    id: crypto.randomUUID(),
-    action,
-    details,
-    ip,
-    created_at: new Date().toISOString(),
+  await withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    store.audit.unshift({
+      id: crypto.randomUUID(),
+      action,
+      details,
+      ip,
+      created_at: new Date().toISOString(),
+    });
+    store.audit = store.audit.slice(0, 200);
+    await writeLocalStoreUnlocked(store);
   });
-  store.audit = store.audit.slice(0, 200);
-  await writeLocalStore(store);
 }
 
 export async function listAuditLogs(): Promise<AuditLog[]> {
@@ -608,8 +860,10 @@ export async function listAuditLogs(): Promise<AuditLog[]> {
       .limit(50);
     return (data || []) as AuditLog[];
   }
-  const store = await readLocalStore();
-  return store.audit.slice(0, 50);
+  return withLocalLock(async () => {
+    const store = await readLocalStoreUnlocked();
+    return store.audit.slice(0, 50);
+  });
 }
 
 export async function saveUploadedImage(file: File): Promise<string> {

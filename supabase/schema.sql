@@ -10,13 +10,23 @@ create table if not exists public.leads (
   last_name text not null default '',
   email text not null unique,
   phone text not null default '',
+  zip_code text not null default '',
   source_page text not null default '/',
   utm_source text not null default '',
   utm_campaign text not null default '',
   status text not null default 'active' check (status in ('active', 'vip', 'unsubscribed')),
+  mailerlite_status text not null default 'pending' check (mailerlite_status in ('pending', 'synced', 'error')),
+  mailerlite_synced_at timestamptz,
+  mailerlite_error text not null default '',
   notes text not null default '',
   created_at timestamptz not null default now()
 );
+
+-- Safe upgrade statements for existing databases
+alter table public.leads add column if not exists zip_code text not null default '';
+alter table public.leads add column if not exists mailerlite_status text not null default 'pending';
+alter table public.leads add column if not exists mailerlite_synced_at timestamptz;
+alter table public.leads add column if not exists mailerlite_error text not null default '';
 
 create index if not exists idx_leads_created_at on public.leads (created_at desc);
 create index if not exists idx_leads_status on public.leads (status);

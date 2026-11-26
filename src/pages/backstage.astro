@@ -323,15 +323,30 @@ const usingSupabase = isSupabaseConfigured();
                   Leads &amp; Newsletter CRM
                 </h1>
                 <p class="font-mono-meta text-xs text-ash uppercase">
-                  Mailing list &amp; 2027 pre-sale fan signups
+                  Mailing list &amp; 2027 pre-sale signups • MailerLite-ready sync &amp; export
                 </p>
               </div>
-              <a
-                href="/api/admin/leads/export"
-                class="btn-crimson !min-h-10 !px-4 !py-2 text-sm"
-              >
-                Export CSV &darr;
-              </a>
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  id="btn-sync-mailerlite"
+                  class="btn-outline !min-h-10 !px-3.5 !py-2 text-xs"
+                >
+                  Sync to MailerLite
+                </button>
+                <a
+                  href="/api/admin/leads/export?format=mailerlite"
+                  class="btn-outline !min-h-10 !px-3.5 !py-2 text-xs"
+                >
+                  MailerLite CSV &darr;
+                </a>
+                <a
+                  href="/api/admin/leads/export"
+                  class="btn-crimson !min-h-10 !px-4 !py-2 text-xs"
+                >
+                  Full CSV &darr;
+                </a>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -376,8 +391,8 @@ const usingSupabase = isSupabaseConfigured();
                 <thead class="border-b border-white/10 bg-obsidian/70 font-mono-meta text-[10px] text-ash uppercase">
                   <tr>
                     <th class="px-4 py-3">Fan</th>
-                    <th class="px-4 py-3">Email &amp; Phone</th>
-                    <th class="px-4 py-3">Source</th>
+                    <th class="px-4 py-3">Email / Phone / ZIP</th>
+                    <th class="px-4 py-3">MailerLite</th>
                     <th class="px-4 py-3">Status</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3 text-right">Actions</th>
@@ -628,6 +643,37 @@ const usingSupabase = isSupabaseConfigured();
               <p class="font-mono-meta text-xs text-ash uppercase">
                 Environment readiness, Supabase seeding &amp; Backstage audit trail
               </p>
+            </div>
+
+            <div class="border border-white/15 bg-coal p-5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 class="font-display text-2xl text-white uppercase">Live Database Connection &amp; Table Counts</h2>
+                  <p id="health-subtitle" class="font-mono-meta text-xs text-ash uppercase">Checking connection...</p>
+                </div>
+                <span id="health-badge" class="font-mono-meta border border-white/20 px-3 py-1 text-xs font-bold uppercase">
+                  Checking...
+                </span>
+              </div>
+              <p id="health-error" class="mt-3 hidden border border-crimson/60 bg-crimson/15 px-3 py-2 font-mono-meta text-xs text-white"></p>
+              <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div class="border border-white/10 bg-obsidian p-3">
+                  <span class="font-mono-meta text-[10px] text-ash uppercase">leads rows</span>
+                  <p id="hc-leads" class="font-display mt-1 text-3xl text-white">—</p>
+                </div>
+                <div class="border border-white/10 bg-obsidian p-3">
+                  <span class="font-mono-meta text-[10px] text-ash uppercase">news_posts rows</span>
+                  <p id="hc-posts" class="font-display mt-1 text-3xl text-white">—</p>
+                </div>
+                <div class="border border-white/10 bg-obsidian p-3">
+                  <span class="font-mono-meta text-[10px] text-ash uppercase">telemetry_events</span>
+                  <p id="hc-tele" class="font-display mt-1 text-3xl text-white">—</p>
+                </div>
+                <div class="border border-white/10 bg-obsidian p-3">
+                  <span class="font-mono-meta text-[10px] text-ash uppercase">admin_audit_logs</span>
+                  <p id="hc-audit" class="font-display mt-1 text-3xl text-white">—</p>
+                </div>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -902,6 +948,29 @@ const usingSupabase = isSupabaseConfigured();
             })
             .join('');
 
+          // Live DB Health Card
+          const h = data.health;
+          if (h) {
+            const hSub = document.getElementById('health-subtitle');
+            const hBadge = document.getElementById('health-badge');
+            const hErr = document.getElementById('health-error');
+            if (hSub) hSub.textContent = `Active Backend: ${h.backend}`;
+            if (hBadge) {
+              hBadge.textContent = h.connected ? 'CONNECTED' : 'ERROR';
+              hBadge.className = h.connected
+                ? 'font-mono-meta border border-emerald-500/50 bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-300 uppercase'
+                : 'font-mono-meta border border-crimson bg-crimson/20 px-3 py-1 text-xs font-bold text-crimson uppercase';
+            }
+            if (hErr) {
+              hErr.textContent = h.error || '';
+              hErr.classList.toggle('hidden', !h.error);
+            }
+            (document.getElementById('hc-leads')!).textContent = String(h.counts?.leads ?? 0);
+            (document.getElementById('hc-posts')!).textContent = String(h.counts?.news_posts ?? 0);
+            (document.getElementById('hc-tele')!).textContent = String(h.counts?.telemetry_events ?? 0);
+            (document.getElementById('hc-audit')!).textContent = String(h.counts?.admin_audit_logs ?? 0);
+          }
+
           // System checklist
           const env = data.system.env;
           const items = [
@@ -992,13 +1061,25 @@ const usingSupabase = isSupabaseConfigured();
             .map((l) => {
               const name = `${l.first_name || ''} ${l.last_name || ''}`.trim() || '—';
               const dt = new Date(l.created_at).toLocaleDateString();
+              const mlStatus = l.mailerlite_status || 'pending';
+              const mlClass =
+                mlStatus === 'synced'
+                  ? 'border-emerald-500/40 bg-emerald-950/60 text-emerald-300'
+                  : mlStatus === 'error'
+                    ? 'border-crimson/60 bg-crimson/20 text-crimson'
+                    : 'border-amber-500/40 bg-amber-950/40 text-amber-300';
               return `<tr>
-                <td class="px-4 py-3 font-semibold text-white">${esc(name)}</td>
+                <td class="px-4 py-3 font-semibold text-white">
+                  <div>${esc(name)}</div>
+                  <div class="font-mono-meta text-[10px] font-normal text-ash">${esc(l.source_page)}${l.utm_source ? ` · ${esc(l.utm_source)}` : ''}</div>
+                </td>
                 <td class="px-4 py-3">
                   <div class="font-mono-meta text-xs text-chalk">${esc(l.email)}</div>
-                  ${l.phone ? `<div class="font-mono-meta text-[11px] text-ash">${esc(l.phone)}</div>` : ''}
+                  <div class="font-mono-meta text-[11px] text-ash">${[l.phone, l.zip_code ? `ZIP ${l.zip_code}` : ''].filter(Boolean).join(' · ') || '—'}</div>
                 </td>
-                <td class="px-4 py-3 font-mono-meta text-[11px] text-ash">${esc(l.source_page)}${l.utm_source ? ` · ${esc(l.utm_source)}` : ''}</td>
+                <td class="px-4 py-3">
+                  <span title="${esc(l.mailerlite_error || mlStatus)}" class="inline-block border px-2 py-0.5 font-mono-meta text-[10px] font-bold uppercase ${mlClass}">${esc(mlStatus)}</span>
+                </td>
                 <td class="px-4 py-3">
                   <select data-lead-status="${esc(l.id)}" class="border border-white/20 bg-obsidian px-2 py-1 font-mono-meta text-[11px] text-white uppercase">
                     <option value="active" ${l.status === 'active' ? 'selected' : ''}>Active</option>
@@ -1041,6 +1122,18 @@ const usingSupabase = isSupabaseConfigured();
 
         document.getElementById('lead-search')?.addEventListener('input', renderLeads);
         document.getElementById('lead-status-filter')?.addEventListener('change', renderLeads);
+        document.getElementById('btn-sync-mailerlite')?.addEventListener('click', async () => {
+          toast('Syncing pending leads to MailerLite...');
+          const res = await fetch('/api/admin/leads/sync-mailerlite', { method: 'POST' });
+          const json = await res.json();
+          if (res.ok && json.ok) {
+            toast(`Synced ${json.synced}/${json.attempted} leads to MailerLite`);
+            loadLeads();
+            loadAnalytics();
+          } else {
+            toast(json.error || 'Add MAILERLITE_API_KEY in Vercel to enable API sync');
+          }
+        });
 
         // Load & Edit News Posts
         async function loadPosts() {

@@ -11,6 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
       last_name: body.lastName || body.last_name || '',
       email: String(body.email || ''),
       phone: body.phone || '',
+      zip_code: body.zipCode || body.zip_code || '',
       source_page: body.sourcePage || body.source_page || '/',
       utm_source: body.utmSource || body.utm_source || '',
       utm_campaign: body.utmCampaign || body.utm_campaign || '',
