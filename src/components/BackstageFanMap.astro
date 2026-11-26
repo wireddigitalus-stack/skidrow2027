@@ -499,10 +499,10 @@
     let focusedCityKey: string | null = null;
     let searchQuery = '';
 
-    // Globe rotation & zoom (USA dead-center, steady by default)
-    let rotation: [number, number, number] = [97, -38, 0];
+    // Globe rotation & zoom (zoomed 100% into continental USA by default, steady)
+    let rotation: [number, number, number] = [96, -39, 0];
     let targetRotation: [number, number] | null = null;
-    let globeZoom = 1.15;
+    let globeZoom = 2.05;
     let flatZoom = 1.0;
 
     // Pointer interaction
@@ -1648,9 +1648,11 @@
 
     document.querySelectorAll<HTMLButtonElement>('.geo-preset-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const preset = CAMERA_PRESETS[btn.dataset.preset || 'usa'];
+        const key = btn.dataset.preset || 'usa';
+        const preset = CAMERA_PRESETS[key];
         if (preset) {
           targetRotation = [...preset];
+          globeZoom = key === 'usa' ? 2.05 : 1.45;
           setAutoSpin(false);
         }
       });
@@ -1700,18 +1702,18 @@
     document.getElementById('clear-state-filter')?.addEventListener('click', () => selectUsState(null));
 
     document.getElementById('map-zoom-in')?.addEventListener('click', () => {
-      if (mapMode === 'globe') globeZoom = Math.min(2.4, globeZoom * 1.22);
-      else flatZoom = Math.min(2.2, flatZoom * 1.2);
+      if (mapMode === 'globe') globeZoom = Math.min(3.6, globeZoom * 1.22);
+      else flatZoom = Math.min(2.4, flatZoom * 1.2);
     });
     document.getElementById('map-zoom-out')?.addEventListener('click', () => {
-      if (mapMode === 'globe') globeZoom = Math.max(0.78, globeZoom / 1.22);
+      if (mapMode === 'globe') globeZoom = Math.max(0.85, globeZoom / 1.22);
       else flatZoom = Math.max(1.0, flatZoom / 1.2);
     });
     document.getElementById('map-zoom-reset')?.addEventListener('click', () => {
-      globeZoom = 1.15;
+      globeZoom = 2.05;
       flatZoom = 1.0;
       setAutoSpin(false);
-      targetRotation = [97, -38];
+      targetRotation = [96, -39];
       selectUsState(null);
       selectTourStop(null);
       focusedCityKey = null;
