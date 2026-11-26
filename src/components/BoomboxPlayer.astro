@@ -475,33 +475,33 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
               type="button"
               class="bb-toggle-video border border-white/20 bg-obsidian px-2.5 py-2 font-mono-meta text-[10px] font-bold tracking-wider text-chalk uppercase transition-colors hover:border-crimson hover:text-crimson"
             >
-              Stream Deck
+              Show Video
             </button>
           </div>
         </div>
 
-        <!-- Official YouTube Stream Deck (Compact & Compliant, Expandable to Watch Video) + Tracklist -->
+        <!-- Tracklist + Collapsible Official YouTube Feed (collapsed when no video is showing) -->
         <div class="grid grid-cols-1 border-t border-white/10 lg:grid-cols-12">
           <!-- Scrollable Era Tracklist -->
-          <div class="max-h-64 divide-y divide-white/8 overflow-y-auto bg-obsidian/70 lg:col-span-8">
+          <div class="bb-tracklist-wrap max-h-64 divide-y divide-white/8 overflow-y-auto bg-obsidian/70 lg:col-span-12">
             <div class="bb-tracklist"></div>
           </div>
 
-          <!-- Official YouTube Deck Monitor -->
-          <div class="bb-video-panel flex flex-col justify-between border-t border-white/10 bg-black p-3 lg:col-span-4 lg:border-t-0 lg:border-l">
+          <!-- Official YouTube Deck Monitor (collapsed until a video plays or user clicks Show Video) -->
+          <div class="bb-video-panel pointer-events-none h-0 overflow-hidden bg-black p-0 opacity-0 transition-all duration-300">
             <div class="mb-2 flex items-center justify-between">
               <span class="font-mono-meta text-[10px] tracking-widest text-crimson uppercase">
                 Official YouTube Feed
               </span>
               <span class="font-mono-meta text-[9px] text-ash uppercase">
-                Licensed Audio Stream
+                Licensed Stream
               </span>
             </div>
             <div class="relative aspect-video w-full overflow-hidden border border-white/15 bg-black">
               <div class="bb-yt-mount h-full w-full"></div>
             </div>
             <p class="mt-2 font-mono-meta text-[10px] text-ash/80">
-              Streams directly from Skid Row's official YouTube catalog. Tap any track or chrome deck key to switch.
+              Streams directly from Skid Row's official YouTube catalog.
             </p>
           </div>
         </div>
@@ -626,9 +626,38 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
     const progBar = root.querySelector<HTMLElement>('.bb-progress-bar');
     const progFill = root.querySelector<HTMLElement>('.bb-progress-fill');
     const tracklistEl = root.querySelector<HTMLElement>('.bb-tracklist')!;
+    const tracklistWrap = root.querySelector<HTMLElement>('.bb-tracklist-wrap');
     const ytMount = root.querySelector<HTMLElement>('.bb-yt-mount')!;
     const videoPanel = root.querySelector<HTMLElement>('.bb-video-panel');
     const toggleVideoBtn = root.querySelector<HTMLElement>('.bb-toggle-video');
+    let userVideoPref: boolean | null = null;
+
+    function setVideoPanelOpen(open: boolean) {
+      if (!videoPanel || !tracklistWrap) return;
+      if (open) {
+        tracklistWrap.classList.remove('lg:col-span-12');
+        tracklistWrap.classList.add('lg:col-span-8');
+        videoPanel.className =
+          'bb-video-panel flex flex-col justify-between border-t border-white/10 bg-black p-3 opacity-100 transition-all duration-300 lg:col-span-4 lg:border-t-0 lg:border-l';
+        if (toggleVideoBtn) toggleVideoBtn.textContent = 'Hide Video';
+      } else {
+        tracklistWrap.classList.remove('lg:col-span-8');
+        tracklistWrap.classList.add('lg:col-span-12');
+        videoPanel.className =
+          'bb-video-panel pointer-events-none h-0 overflow-hidden bg-black p-0 opacity-0 transition-all duration-300';
+        if (toggleVideoBtn) toggleVideoBtn.textContent = 'Show Video';
+      }
+    }
+
+    function syncVideoPanelVisibility() {
+      const t = currentTrack();
+      if (userVideoPref !== null) {
+        setVideoPanelOpen(userVideoPref);
+        return;
+      }
+      // Auto-open only when an official video track is actively playing; stay collapsed otherwise
+      setVideoPanelOpen(isPlaying && isPowered && Boolean(t.isOfficialVideo));
+    }
 
     const mountId = `sr-bb-yt-${instanceIdx}-${Math.random().toString(36).slice(2, 6)}`;
     ytMount.id = mountId;
@@ -719,6 +748,7 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
             : 'Standby • Press Play on Boombox';
       }
       if (playLabel) playLabel.textContent = isPlaying ? 'Pause' : 'Play';
+      syncVideoPanelVisibility();
     }
 
     function updateTrackUI() {
@@ -862,6 +892,7 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
         ytPlayer.stopVideo();
       }
       isPlaying = false;
+      userVideoPref = null;
       if (progFill) progFill.style.width = '0%';
       if (tunerNeedle) tunerNeedle.style.left = '0%';
       if (counterEl) counterEl.textContent = '000';
@@ -1018,11 +1049,14 @@ const tracksJson = JSON.stringify(BOOMBOX_TRACKS);
       seekToRatio((e.clientX - rect.left) / rect.width);
     });
 
-    // Toggle Stream Deck highlight
+    // Toggle Video Deck open/collapsed manually
     toggleVideoBtn?.addEventListener('click', () => {
-      videoPanel?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      videoPanel?.classList.add('ring-1', 'ring-crimson');
-      setTimeout(() => videoPanel?.classList.remove('ring-1', 'ring-crimson'), 900);
+      const currentlyOpen = toggleVideoBtn.textContent?.trim() === 'Hide Video';
+      userVideoPref = !currentlyOpen;
+      if (userVideoPref && !ytPlayer) {
+        ensurePlayer(false);
+      }
+      setVideoPanelOpen(userVideoPref);
     });
 
     // ==================== 60FPS SPECTRUM, MINI-EQ, VU METER & WOOFER PULSE ====================
