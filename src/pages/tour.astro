@@ -2,6 +2,7 @@
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
 import Icons from '../components/Icons.astro';
+import PublicTourMap from '../components/PublicTourMap.astro';
 import { TOUR_DATES_2027 } from '../data/tour';
 import { SITE } from '../data/site';
 import { SITE_FAQS, buildTourEventsSchema, buildFaqSchema } from '../lib/seo';
@@ -91,6 +92,9 @@ const tourSchemas = [...buildTourEventsSchema(), buildFaqSchema(tourFaqs)];
         </button>
       </div>
 
+      <!-- Public 2027 Tour Venue Map (Pure Build-Time SVG, 0% CPU) -->
+      <PublicTourMap />
+
       <!-- Native Tour List (Always Fast, Zero Broken Iframe) -->
       <div
         id="tour-list"
@@ -98,6 +102,7 @@ const tourSchemas = [...buildTourEventsSchema(), buildFaqSchema(tourFaqs)];
       >
         {TOUR_DATES_2027.map((show) => (
           <article
+            id={`show-${show.id}`}
             class="tour-row flex flex-col items-center gap-3.5 p-5 text-center transition-colors hover:bg-asphalt sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 sm:text-left"
             data-kind={show.kind}
             data-country={show.country}
@@ -241,6 +246,8 @@ const tourSchemas = [...buildTourEventsSchema(), buildFaqSchema(tourFaqs)];
           country === filter;
         row.classList.toggle('hidden', !show);
       });
+
+      window.dispatchEvent(new CustomEvent('skidrow:tour-filter', { detail: { filter } }));
     });
   });
 

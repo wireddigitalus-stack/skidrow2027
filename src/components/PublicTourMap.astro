@@ -1,0 +1,412 @@
+---
+// Public 2027 Tour Venue Map — 100% static build-time SVG (0 KB map library shipped to browser, 0% CPU)
+// Completely separate from Backstage analytics/telemetry.
+import { geoAlbersUsa, geoPath } from 'd3-geo';
+import { feature } from 'topojson-client';
+import usAtlas from 'us-atlas/states-10m.json';
+import { TOUR_DATES_2027 } from '../data/tour';
+import { STATE_BY_FIPS, TOUR_STOPS_GEO } from '../lib/geo';
+import Icons from './Icons.astro';
+
+const usStatesGeo = feature(
+  usAtlas as any,
+  (usAtlas as any).objects.states
+) as any;
+
+const projection = geoAlbersUsa().fitExtent(
+  [
+    [24, 18],
+    [936, 522],
+  ],
+  usStatesGeo
+);
+const pathGen = geoPath(projection);
+
+const showStateCodes = new Set(TOUR_DATES_2027.map((d) => d.region));
+
+const statePaths = (usStatesGeo.features as any[])
+  .map((feat) => {
+    const d = pathGen(feat);
+    if (!d) return null;
+    const fips = String(feat.id || '').padStart(2, '0');
+    const meta = STATE_BY_FIPS.get(fips);
+    const code = meta?.code || '';
+    const hasShow = showStateCodes.has(code);
+    const centroid = pathGen.centroid(feat);
+    return {
+      code,
+      name: meta?.name || '',
+      d,
+      hasShow,
+      cx: Number.isFinite(centroid[0]) ? Number(centroid[0].toFixed(1)) : null,
+      cy: Number.isFinite(centroid[1]) ? Number(centroid[1].toFixed(1)) : null,
+    };
+  })
+  .filter(Boolean) as Array<{
+  code: string;
+  name: string;
+  d: string;
+  hasShow: boolean;
+  cx: number | null;
+  cy: number | null;
+}>;
+
+const skipLabelStates = new Set(['RI', 'DE', 'DC', 'CT', 'MD', 'MA', 'NH', 'VT', 'NJ', 'HI']);
+
+const geoById = new Map(TOUR_STOPS_GEO.map((s) => [s.id, s]));
+
+const venuePins = TOUR_DATES_2027.map((show, idx) => {
+  const geo = geoById.get(show.id);
+  const xy = geo ? projection([geo.lng, geo.lat]) : null;
+  if (!xy) return null;
+  return {
+    index: idx + 1,
+    id: show.id,
+    city: show.city,
+    region: show.region,
+    country: show.country,
+    venue: show.venue,
+    kind: show.kind,
+    status: show.status,
+    dateLabel: `${show.weekday}, ${show.month} ${show.day}, ${show.year}`,
+    shortDate: `${show.month} ${show.day}`,
+    ticketUrl: show.ticketUrl,
+    x: Number(xy[0].toFixed(1)),
+    y: Number(xy[1].toFixed(1)),
+  };
+}).filter(Boolean) as Array<{
+  index: number;
+  id: string;
+  city: string;
+  region: string;
+  country: 'US' | 'CA';
+  venue: string;
+  kind: 'Headline' | 'Festival';
+  status: string;
+  dateLabel: string;
+  shortDate: string;
+  ticketUrl: string;
+  x: number;
+  y: number;
+}>;
+
+const firstPin = venuePins[0];
+
+function starPoints(cx: number, cy: number, outerR = 9.5, innerR = 4.2): string {
+  const pts: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    pts.push(`${(cx + Math.cos(a) * r).toFixed(1)},${(cy + Math.sin(a) * r).toFixed(1)}`);
+  }
+  return pts.join(' ');
+}
+---
+
+<div
+  id="public-tour-map"
+  class="mt-8 border border-white/15 bg-coal/95 shadow-2xl"
+  data-pins={JSON.stringify(venuePins)}
+>
+  <!-- Compact Top Header Bar -->
+  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-obsidian/80 px-4 py-3 sm:px-5">
+    <div class="flex flex-wrap items-center gap-2.5">
+      <span class="font-mono-meta inline-flex items-center gap-1.5 border border-crimson/50 bg-crimson/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.18em] text-crimson uppercase">
+        2027 Tour Map
+      </span>
+      <div class="flex items-center gap-3 font-mono-meta text-[10px] text-ash uppercase">
+        <span class="inline-flex items-center gap-1.5">
+          <span class="h-2.5 w-2.5 rounded-full border border-white/80 bg-crimson shadow-[0_0_8px_#e21c21]"></span>
+          Headline
+        </span>
+        <span class="inline-flex items-center gap-1.5 text-amber-300">
+          <span class="text-xs leading-none">&#9733;</span>
+          Festival
+        </span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <span class="hidden font-mono-meta text-[10px] tracking-wider text-ash/80 uppercase sm:inline">
+        Tap any venue pin for show info
+      </span>
+      <button
+        type="button"
+        id="toggle-public-tour-map"
+        aria-expanded="true"
+        aria-controls="public-tour-map-body"
+        class="border border-white/15 bg-coal px-2.5 py-1 font-mono-meta text-[10px] font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+      >
+        Hide Map &#9652;
+      </button>
+    </div>
+  </div>
+
+  <!-- Collapsible Pure Vector Map + Venue Spotlight -->
+  <div id="public-tour-map-body">
+    <!-- Pure Static SVG Map Stage -->
+    <div class="relative overflow-hidden bg-[#060608] px-2 pt-3 pb-2 sm:px-5 sm:pt-4">
+      <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,rgba(226,28,33,0.12)_0%,transparent_68%)]"></div>
+      <svg
+        viewBox="0 0 960 540"
+        class="relative mx-auto block h-auto max-h-[340px] w-full select-none sm:max-h-[430px]"
+        role="img"
+        aria-label="Interactive map of Skid Row 2027 North American concert venues"
+      >
+        <defs>
+          <filter id="sr-pin-glow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- 50 US State Silhouettes -->
+        <g>
+          {statePaths.map((st) => (
+            <path
+              d={st.d}
+              fill={st.hasShow ? '#2a1114' : '#131319'}
+              stroke={st.hasShow ? 'rgba(226, 28, 33, 0.45)' : 'rgba(255, 255, 255, 0.16)'}
+              stroke-width={st.hasShow ? '1.1' : '0.8'}
+              class="transition-colors duration-200"
+            />
+          ))}
+        </g>
+
+        <!-- Subtle State Abbreviations -->
+        <g class="pointer-events-none select-none">
+          {statePaths.map((st) =>
+            st.cx !== null && st.cy !== null && !skipLabelStates.has(st.code) ? (
+              <text
+                x={st.cx}
+                y={st.cy}
+                text-anchor="middle"
+                dominant-baseline="central"
+                fill={st.hasShow ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.18)'}
+                font-family="Space Mono, monospace"
+                font-size="10"
+                font-weight="700"
+              >
+                {st.code}
+              </text>
+            ) : null
+          )}
+        </g>
+
+        <!-- 14 Interactive 2027 Venue Pins -->
+        <g id="public-tour-pins">
+          {venuePins.map((pin, idx) => (
+            <g
+              class="tour-map-pin cursor-pointer transition-opacity duration-200"
+              data-pin-id={pin.id}
+              data-pin-kind={pin.kind}
+              data-pin-country={pin.country}
+              tabindex="0"
+              role="button"
+              aria-label={`${pin.city}, ${pin.region} — ${pin.venue} on ${pin.dateLabel}`}
+            >
+              <!-- Selected Halo Ring -->
+              <circle
+                cx={pin.x}
+                cy={pin.y}
+                r="16"
+                fill={pin.kind === 'Festival' ? 'rgba(245, 158, 11, 0.22)' : 'rgba(226, 28, 33, 0.24)'}
+                stroke={pin.kind === 'Festival' ? '#fbbf24' : '#ff3b41'}
+                stroke-width="1.5"
+                class:list={['pin-active-ring transition-opacity duration-200', idx === 0 ? 'opacity-100' : 'opacity-0']}
+              />
+
+              <!-- Dark Backing Halo -->
+              <circle
+                cx={pin.x}
+                cy={pin.y}
+                r={pin.kind === 'Festival' ? '10.5' : '8.5'}
+                fill="rgba(5, 5, 7, 0.9)"
+                stroke={pin.kind === 'Festival' ? 'rgba(245, 158, 11, 0.55)' : 'rgba(226, 28, 33, 0.55)'}
+                stroke-width="1"
+              />
+
+              {pin.kind === 'Festival' ? (
+                <polygon
+                  points={starPoints(pin.x, pin.y, 8.6, 3.8)}
+                  fill="#f59e0b"
+                  stroke="#fffbeb"
+                  stroke-width="1"
+                  filter="url(#sr-pin-glow)"
+                />
+              ) : (
+                <circle
+                  cx={pin.x}
+                  cy={pin.y}
+                  r="5.6"
+                  fill="#e21c21"
+                  stroke="#ffffff"
+                  stroke-width="1.4"
+                  filter="url(#sr-pin-glow)"
+                />
+              )}
+
+              <!-- Generous Tap Target for Mobile -->
+              <circle cx={pin.x} cy={pin.y} r="18" fill="transparent" />
+            </g>
+          ))}
+        </g>
+      </svg>
+    </div>
+
+    <!-- Selected Venue Spotlight Bar -->
+    {firstPin && (
+      <div
+        id="tour-map-spotlight"
+        class="flex flex-col items-center justify-between gap-3 border-t border-white/10 bg-obsidian/90 px-4 py-3.5 text-center sm:flex-row sm:px-5 sm:text-left"
+      >
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+            <span
+              id="spot-badge"
+              class="font-mono-meta bg-crimson/20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-crimson uppercase"
+            >
+              {firstPin.kind}
+            </span>
+            <span id="spot-date" class="font-mono-meta text-[11px] tracking-wider text-ash uppercase">
+              {firstPin.dateLabel}
+            </span>
+          </div>
+          <h3 id="spot-city" class="font-display mt-1 text-2xl leading-tight text-white uppercase">
+            {firstPin.city}, {firstPin.region}
+          </h3>
+          <p id="spot-venue" class="text-sm text-chalk/80">
+            {firstPin.venue}
+          </p>
+        </div>
+
+        <div class="flex w-full items-center justify-center gap-2 sm:w-auto sm:shrink-0">
+          <button
+            type="button"
+            id="spot-jump-btn"
+            data-target-id={firstPin.id}
+            class="inline-flex min-h-11 items-center justify-center border border-white/20 bg-coal px-3.5 font-mono-meta text-[11px] font-bold tracking-wider text-chalk uppercase transition-colors hover:border-crimson hover:text-white"
+          >
+            See Date &darr;
+          </button>
+          <a
+            id="spot-ticket-link"
+            href={firstPin.ticketUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-crimson !min-h-11 flex-1 !px-5 !py-2 text-sm sm:flex-initial"
+          >
+            <Icons name="ticket" class="h-4 w-4" />
+            <span id="spot-status">{firstPin.status}</span>
+          </a>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+
+<script>
+  const mapRoot = document.getElementById('public-tour-map');
+  if (mapRoot) {
+    const pins = JSON.parse(mapRoot.dataset.pins || '[]') as Array<{
+      id: string;
+      city: string;
+      region: string;
+      country: string;
+      venue: string;
+      kind: string;
+      status: string;
+      dateLabel: string;
+      ticketUrl: string;
+    }>;
+    const pinById = new Map(pins.map((p) => [p.id, p]));
+    const pinEls = mapRoot.querySelectorAll<SVGGElement>('.tour-map-pin');
+
+    const badgeEl = document.getElementById('spot-badge');
+    const dateEl = document.getElementById('spot-date');
+    const cityEl = document.getElementById('spot-city');
+    const venueEl = document.getElementById('spot-venue');
+    const statusEl = document.getElementById('spot-status');
+    const ticketLink = document.getElementById('spot-ticket-link') as HTMLAnchorElement | null;
+    const jumpBtn = document.getElementById('spot-jump-btn') as HTMLButtonElement | null;
+
+    function selectPin(id: string) {
+      const p = pinById.get(id);
+      if (!p) return;
+
+      pinEls.forEach((el) => {
+        const ring = el.querySelector('.pin-active-ring');
+        const active = el.dataset.pinId === id;
+        ring?.classList.toggle('opacity-100', active);
+        ring?.classList.toggle('opacity-0', !active);
+      });
+
+      if (badgeEl) {
+        badgeEl.textContent = p.kind === 'Festival' ? '★ Festival' : p.country === 'CA' ? 'Canada Headline' : 'Headline';
+        badgeEl.className =
+          p.kind === 'Festival'
+            ? 'font-mono-meta bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-amber-300 uppercase'
+            : 'font-mono-meta bg-crimson/20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-crimson uppercase';
+      }
+      if (dateEl) dateEl.textContent = p.dateLabel;
+      if (cityEl) cityEl.textContent = `${p.city}, ${p.region}`;
+      if (venueEl) venueEl.textContent = p.venue;
+      if (statusEl) statusEl.textContent = p.status;
+      if (ticketLink) ticketLink.href = p.ticketUrl;
+      if (jumpBtn) jumpBtn.dataset.targetId = p.id;
+    }
+
+    pinEls.forEach((el) => {
+      const id = el.dataset.pinId || '';
+      el.addEventListener('click', () => selectPin(id));
+      el.addEventListener('mouseenter', () => selectPin(id));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectPin(id);
+        }
+      });
+    });
+
+    // Smooth scroll & crimson flash to the matching show row below
+    jumpBtn?.addEventListener('click', () => {
+      const id = jumpBtn.dataset.targetId;
+      if (!id) return;
+      const row = document.getElementById(`show-${id}`);
+      if (!row) return;
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('ring-2', 'ring-crimson', 'bg-crimson/10');
+      setTimeout(() => row.classList.remove('ring-2', 'ring-crimson', 'bg-crimson/10'), 1600);
+    });
+
+    // Collapse / Expand Map toggle
+    const toggleBtn = document.getElementById('toggle-public-tour-map');
+    const bodyEl = document.getElementById('public-tour-map-body');
+    let mapOpen = true;
+    toggleBtn?.addEventListener('click', () => {
+      mapOpen = !mapOpen;
+      bodyEl?.classList.toggle('hidden', !mapOpen);
+      toggleBtn.setAttribute('aria-expanded', String(mapOpen));
+      toggleBtn.innerHTML = mapOpen ? 'Hide Map &#9652;' : 'Show Map &#9662;';
+    });
+
+    // Sync pins with /tour filter pills (All / Headline / Festivals / Canada)
+    window.addEventListener('skidrow:tour-filter', ((e: CustomEvent<{ filter: string }>) => {
+      const filter = e.detail?.filter || 'all';
+      let firstVisibleId = '';
+      pinEls.forEach((el) => {
+        const show =
+          filter === 'all' ||
+          el.dataset.pinKind === filter ||
+          el.dataset.pinCountry === filter;
+        el.classList.toggle('opacity-15', !show);
+        el.classList.toggle('pointer-events-none', !show);
+        if (show && !firstVisibleId) firstVisibleId = el.dataset.pinId || '';
+      });
+      if (firstVisibleId) selectPin(firstVisibleId);
+    }) as EventListener);
+  }
+</script>

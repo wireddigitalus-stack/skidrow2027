@@ -86,12 +86,25 @@ const { hideMailingList = false } = Astro.props;
         </a>
       </div>
 
-      <p
-        id="sr-copy-trigger"
-        class="text-center text-xs text-ash/80 select-none sm:text-right"
-      >
-        &copy; 2026&ndash;2027 Skid Row Inc. All Rights Reserved.
-      </p>
+      <div class="flex flex-col items-center gap-1.5 text-center sm:items-end sm:text-right">
+        <p
+          id="sr-copy-trigger"
+          class="text-xs text-ash/80 select-none"
+        >
+          &copy; 2026&ndash;2027 Skid Row Inc. All Rights Reserved.
+        </p>
+        <p class="font-mono-meta text-[11px] tracking-wider text-ash/80">
+          Site by{' '}
+          <a
+            href="https://www.wireddigitalcreative.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-bold text-white transition-colors hover:text-crimson"
+          >
+            WIRED<span class="text-crimson" aria-hidden="true">&#9889;</span>DIGITAL
+          </a>
+        </p>
+      </div>
     </div>
   </div>
 </footer>
