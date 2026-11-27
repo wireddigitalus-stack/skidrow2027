@@ -146,5 +146,6 @@ export function getAuthEnvStatus() {
     hasSupabaseUrl: Boolean(getEnv('SUPABASE_URL')),
     hasSupabaseKey: Boolean(getEnv('SUPABASE_SERVICE_ROLE_KEY')),
     hasMailerLite: Boolean(getEnv('MAILERLITE_API_KEY')),
+    hasBandsintown: Boolean(getEnv('BANDSINTOWN_APP_ID')),
   };
 }

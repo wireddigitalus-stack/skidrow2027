@@ -1,18 +1,23 @@
 ---
-export const prerender = true;
+export const prerender = false;
 import Layout from '../layouts/Layout.astro';
 import Icons from '../components/Icons.astro';
 import PublicTourMap from '../components/PublicTourMap.astro';
-import { TOUR_DATES_2027 } from '../data/tour';
 import { SITE } from '../data/site';
 import { SITE_FAQS, buildTourEventsSchema, buildFaqSchema } from '../lib/seo';
+import { getLiveTourSync } from '../lib/tourSync';
 
-const totalShows = TOUR_DATES_2027.length;
-const headlineCount = TOUR_DATES_2027.filter((d) => d.kind === 'Headline').length;
-const festivalCount = TOUR_DATES_2027.filter((d) => d.kind === 'Festival').length;
-const canadaCount = TOUR_DATES_2027.filter((d) => d.country === 'CA').length;
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=3600');
+
+const tourSync = await getLiveTourSync();
+const shows = tourSync.shows;
+const totalShows = shows.length;
+const headlineCount = shows.filter((d) => d.kind === 'Headline').length;
+const festivalCount = shows.filter((d) => d.kind === 'Festival').length;
+const canadaCount = shows.filter((d) => d.country === 'CA').length;
+const intlCount = shows.filter((d) => d.country !== 'US' && d.country !== 'CA').length;
 const tourFaqs = [SITE_FAQS[2], SITE_FAQS[0], SITE_FAQS[4]];
-const tourSchemas = [...buildTourEventsSchema(), buildFaqSchema(tourFaqs)];
+const tourSchemas = [...buildTourEventsSchema(shows), buildFaqSchema(tourFaqs)];
 ---
 
 <Layout
@@ -83,24 +88,35 @@ const tourSchemas = [...buildTourEventsSchema(), buildFaqSchema(tourFaqs)];
         >
           Festivals ({festivalCount})
         </button>
-        <button
-          type="button"
-          data-filter="CA"
-          class="tour-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
-        >
-          Canada ({canadaCount})
-        </button>
+        {canadaCount > 0 && (
+          <button
+            type="button"
+            data-filter="CA"
+            class="tour-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+          >
+            Canada ({canadaCount})
+          </button>
+        )}
+        {intlCount > 0 && (
+          <button
+            type="button"
+            data-filter="INTL"
+            class="tour-filter-btn min-h-11 shrink-0 border border-white/20 bg-coal px-4 font-mono-meta text-xs font-bold tracking-wider text-ash uppercase transition-colors hover:border-crimson hover:text-white"
+          >
+            International ({intlCount})
+          </button>
+        )}
       </div>
 
-      <!-- Public 2027 Tour Venue Map (Pure Build-Time SVG, 0% CPU) -->
-      <PublicTourMap />
+      <!-- Public 2027 Tour Venue Map (Server-Rendered Pure SVG, 0% CPU, Auto-Synced) -->
+      <PublicTourMap shows={shows} />
 
       <!-- Native Tour List (Always Fast, Zero Broken Iframe) -->
       <div
         id="tour-list"
         class="mt-6 divide-y divide-white/10 border border-white/15 bg-coal"
       >
-        {TOUR_DATES_2027.map((show) => (
+        {shows.map((show) => (
           <article
             id={`show-${show.id}`}
             class="tour-row flex flex-col items-center gap-3.5 p-5 text-center transition-colors hover:bg-asphalt sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 sm:text-left"
@@ -239,11 +255,12 @@ const tourSchemas = [...buildTourEventsSchema(), buildFaqSchema(tourFaqs)];
 
       rows.forEach((row) => {
         const kind = row.dataset.kind;
-        const country = row.dataset.country;
+        const country = row.dataset.country || '';
         const show =
           filter === 'all' ||
           kind === filter ||
-          country === filter;
+          country === filter ||
+          (filter === 'INTL' && country !== 'US' && country !== 'CA');
         row.classList.toggle('hidden', !show);
       });
 

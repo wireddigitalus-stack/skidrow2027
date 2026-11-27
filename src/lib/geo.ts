@@ -202,7 +202,7 @@ export interface TourStopGeo {
   date: string;
   city: string;
   region: string;
-  country: 'US' | 'CA';
+  country: string;
   venue: string;
   kind: 'Headline' | 'Festival';
   lat: number;
@@ -232,10 +232,11 @@ export function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: n
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function nearestTourStop(lat: number, lng: number) {
-  let best = TOUR_STOPS_GEO[0];
+export function nearestTourStop(lat: number, lng: number, stops: TourStopGeo[] = TOUR_STOPS_GEO) {
+  const list = stops.length ? stops : TOUR_STOPS_GEO;
+  let best = list[0];
   let bestDist = Infinity;
-  for (const stop of TOUR_STOPS_GEO) {
+  for (const stop of list) {
     const dist = haversineMiles(lat, lng, stop.lat, stop.lng);
     if (dist < bestDist) {
       bestDist = dist;

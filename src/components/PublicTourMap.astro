@@ -1,12 +1,18 @@
 ---
-// Public 2027 Tour Venue Map — 100% static build-time SVG (0 KB map library shipped to browser, 0% CPU)
+// Public 2027 Tour Venue Map — 100% server-rendered pure SVG (0 KB map library shipped to browser, 0% CPU)
 // Completely separate from Backstage analytics/telemetry.
 import { geoAlbersUsa, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import usAtlas from 'us-atlas/states-10m.json';
-import { TOUR_DATES_2027 } from '../data/tour';
-import { STATE_BY_FIPS, TOUR_STOPS_GEO } from '../lib/geo';
+import { STATE_BY_FIPS } from '../lib/geo';
+import { getFallbackTourShows, type LiveTourShow } from '../lib/tourSync';
 import Icons from './Icons.astro';
+
+interface Props {
+  shows?: LiveTourShow[];
+}
+
+const { shows = getFallbackTourShows() } = Astro.props;
 
 const usStatesGeo = feature(
   usAtlas as any,
@@ -22,7 +28,9 @@ const projection = geoAlbersUsa().fitExtent(
 );
 const pathGen = geoPath(projection);
 
-const showStateCodes = new Set(TOUR_DATES_2027.map((d) => d.region));
+const showStateCodes = new Set(
+  shows.filter((d) => d.country === 'US').map((d) => d.region.toUpperCase())
+);
 
 const statePaths = (usStatesGeo.features as any[])
   .map((feat) => {
@@ -53,33 +61,35 @@ const statePaths = (usStatesGeo.features as any[])
 
 const skipLabelStates = new Set(['RI', 'DE', 'DC', 'CT', 'MD', 'MA', 'NH', 'VT', 'NJ', 'HI']);
 
-const geoById = new Map(TOUR_STOPS_GEO.map((s) => [s.id, s]));
-
-const venuePins = TOUR_DATES_2027.map((show, idx) => {
-  const geo = geoById.get(show.id);
-  const xy = geo ? projection([geo.lng, geo.lat]) : null;
-  if (!xy) return null;
-  return {
-    index: idx + 1,
-    id: show.id,
-    city: show.city,
-    region: show.region,
-    country: show.country,
-    venue: show.venue,
-    kind: show.kind,
-    status: show.status,
-    dateLabel: `${show.weekday}, ${show.month} ${show.day}, ${show.year}`,
-    shortDate: `${show.month} ${show.day}`,
-    ticketUrl: show.ticketUrl,
-    x: Number(xy[0].toFixed(1)),
-    y: Number(xy[1].toFixed(1)),
-  };
-}).filter(Boolean) as Array<{
+const venuePins = shows
+  .map((show, idx) => {
+    const xy =
+      typeof show.lat === 'number' && typeof show.lng === 'number'
+        ? projection([show.lng, show.lat])
+        : null;
+    if (!xy) return null;
+    return {
+      index: idx + 1,
+      id: show.id,
+      city: show.city,
+      region: show.region,
+      country: show.country,
+      venue: show.venue,
+      kind: show.kind,
+      status: show.status,
+      dateLabel: `${show.weekday}, ${show.month} ${show.day}, ${show.year}`,
+      shortDate: `${show.month} ${show.day}`,
+      ticketUrl: show.ticketUrl,
+      x: Number(xy[0].toFixed(1)),
+      y: Number(xy[1].toFixed(1)),
+    };
+  })
+  .filter(Boolean) as Array<{
   index: number;
   id: string;
   city: string;
   region: string;
-  country: 'US' | 'CA';
+  country: string;
   venue: string;
   kind: 'Headline' | 'Festival';
   status: string;
@@ -90,6 +100,7 @@ const venuePins = TOUR_DATES_2027.map((show, idx) => {
   y: number;
 }>;
 
+const intlCount = Math.max(0, shows.length - venuePins.length);
 const firstPin = venuePins[0];
 
 function starPoints(cx: number, cy: number, outerR = 9.5, innerR = 4.2): string {
@@ -123,6 +134,11 @@ function starPoints(cx: number, cy: number, outerR = 9.5, innerR = 4.2): string 
           <span class="text-xs leading-none">&#9733;</span>
           Festival
         </span>
+        {intlCount > 0 && (
+          <span class="border border-white/20 bg-coal px-1.5 py-0.5 text-[9px] text-chalk">
+            +{intlCount} Intl
+          </span>
+        )}
       </div>
     </div>
 

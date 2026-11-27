@@ -9,6 +9,7 @@ import {
   nearestTourStop,
   resolveFallbackGeo,
   TOUR_STOPS_GEO,
+  type TourStopGeo,
 } from './geo';
 
 export interface LeadRecord {
@@ -866,7 +867,8 @@ export async function recordTelemetry(
   });
 }
 
-export async function getAnalyticsSummary(days = 7) {
+export async function getAnalyticsSummary(days = 7, liveTourStops?: TourStopGeo[]) {
+  const activeTourStops = liveTourStops && liveTourStops.length ? liveTourStops : TOUR_STOPS_GEO;
   const cutoff = new Date(Date.now() - days * 86400000).toISOString();
   let events: TelemetryEvent[] = [];
 
@@ -1208,7 +1210,7 @@ export async function getAnalyticsSummary(days = 7) {
 
   const cities = [...cityMap.values()]
     .map((c) => {
-      const nearest = nearestTourStop(c.lat, c.lng);
+      const nearest = nearestTourStop(c.lat, c.lng, activeTourStops);
       return {
         city: c.city,
         region: c.region,
@@ -1259,7 +1261,7 @@ export async function getAnalyticsSummary(days = 7) {
       usStates,
       cities,
       tourOpportunities,
-      tourStops: TOUR_STOPS_GEO,
+      tourStops: activeTourStops,
       recentPings,
     },
   };

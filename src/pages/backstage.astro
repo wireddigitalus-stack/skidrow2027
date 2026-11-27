@@ -776,13 +776,24 @@ const usingSupabase = isSupabaseConfigured();
               </div>
 
               <div class="border border-white/12 bg-coal p-5">
-                <h2 class="font-display text-2xl text-white uppercase">Supabase Seed Tool</h2>
-                <p class="mt-2 text-sm text-ash">
-                  When you first connect a fresh Supabase project (after running <code class="text-white">supabase/schema.sql</code>), click below to populate all 20 scraped Skid Row news posts into Postgres.
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <h2 class="font-display text-2xl text-white uppercase">Bandsintown Live Sync</h2>
+                  <span id="bit-status-badge" class="font-mono-meta border border-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase">
+                    Checking...
+                  </span>
+                </div>
+                <p id="bit-status-desc" class="mt-2 text-sm text-ash">
+                  Add <code class="text-white">BANDSINTOWN_APP_ID</code> in Vercel (from Bandsintown for Artists &rarr; Settings &rarr; General &rarr; Get API Key) to auto-sync the Tour Map, /tour list, Backstage Globe &amp; Google Events every 15 minutes.
                 </p>
-                <button type="button" id="btn-seed-posts" class="btn-outline mt-4">
-                  Seed 20 Skid Row Posts
-                </button>
+                <p id="bit-status-error" class="mt-2 hidden border border-amber-500/40 bg-amber-950/40 px-3 py-1.5 font-mono-meta text-[11px] text-amber-200"></p>
+                <div class="mt-4 flex flex-wrap gap-2.5">
+                  <button type="button" id="btn-sync-tour" class="btn-outline !min-h-10 !px-3.5 !py-2 text-xs">
+                    Force Sync Tour Dates
+                  </button>
+                  <button type="button" id="btn-seed-posts" class="btn-outline !min-h-10 !px-3.5 !py-2 text-xs">
+                    Seed 20 Skid Row Posts
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1246,11 +1257,12 @@ const usingSupabase = isSupabaseConfigured();
         });
 
         // Load Analytics + System
-        async function loadAnalytics(days = currentDays) {
+        async function loadAnalytics(days = currentDays, syncTour = false) {
           currentDays = days;
-          const res = await fetch(`/api/admin/analytics?days=${days}&_t=${Date.now()}`, {
-            cache: 'no-store',
-          });
+          const res = await fetch(
+            `/api/admin/analytics?days=${days}${syncTour ? '&syncTour=1' : ''}&_t=${Date.now()}`,
+            { cache: 'no-store' }
+          );
           if (res.status === 401) return window.location.reload();
           const data = await res.json();
           const a = data.analytics;
@@ -1367,6 +1379,29 @@ const usingSupabase = isSupabaseConfigured();
             (document.getElementById('hc-audit')!).textContent = String(h.counts?.admin_audit_logs ?? 0);
           }
 
+          // Bandsintown Live Tour Sync Card
+          const ts = data.tourSync;
+          if (ts) {
+            const bBadge = document.getElementById('bit-status-badge');
+            const bDesc = document.getElementById('bit-status-desc');
+            const bErr = document.getElementById('bit-status-error');
+            if (bBadge) {
+              const isLive = ts.source === 'bandsintown';
+              bBadge.textContent = isLive ? `LIVE • ${ts.count} SHOWS` : `FALLBACK • ${ts.count} SHOWS`;
+              bBadge.className = isLive
+                ? 'font-mono-meta border border-emerald-500/50 bg-emerald-950/60 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 uppercase'
+                : 'font-mono-meta border border-amber-500/50 bg-amber-950/50 px-2.5 py-0.5 text-[10px] font-bold text-amber-300 uppercase';
+            }
+            if (bDesc && ts.source === 'bandsintown') {
+              const when = ts.lastSyncedAt ? new Date(ts.lastSyncedAt).toLocaleTimeString() : 'just now';
+              bDesc.textContent = `Auto-syncing live from Bandsintown (id_1473) every 15 minutes. Last synced at ${when}. Public Tour Map, /tour list, Backstage Globe & SEO all stay updated automatically.`;
+            }
+            if (bErr) {
+              bErr.textContent = ts.error || '';
+              bErr.classList.toggle('hidden', !ts.error);
+            }
+          }
+
           // System checklist
           const env = data.system.env;
           const items = [
@@ -1376,6 +1411,7 @@ const usingSupabase = isSupabaseConfigured();
             { label: 'Custom 6-Digit ADMIN_PIN set', ok: env.hasCustomPin },
             { label: 'SESSION_SECRET configured', ok: env.hasSessionSecret },
             { label: 'Optional MailerLite API Sync', ok: env.hasMailerLite },
+            { label: 'Optional Bandsintown Auto-Sync', ok: env.hasBandsintown },
           ];
           document.getElementById('env-checklist')!.innerHTML = items
             .map(
@@ -1755,6 +1791,11 @@ const usingSupabase = isSupabaseConfigured();
         });
 
         document.getElementById('btn-seed-posts')?.addEventListener('click', runSeedPosts);
+        document.getElementById('btn-sync-tour')?.addEventListener('click', async () => {
+          toast('Syncing tour dates from Bandsintown…');
+          await loadAnalytics(currentDays, true);
+          toast('Tour sync refreshed!');
+        });
 
         // Initial load (only when authenticated dashboard DOM is mounted)
         if (document.getElementById('panel-analytics')) {

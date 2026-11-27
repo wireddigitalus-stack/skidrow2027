@@ -4,9 +4,9 @@ import Marquee from '../components/Marquee.astro';
 import YouTubeFacade from '../components/YouTubeFacade.astro';
 import BoomboxPlayer from '../components/BoomboxPlayer.astro';
 import Icons from '../components/Icons.astro';
-import { TOUR_DATES_2027 } from '../data/tour';
 import { DISCOGRAPHY } from '../data/discography';
 import { listPosts } from '../lib/db';
+import { getLiveTourDates } from '../lib/tourSync';
 import {
   buildWebsiteSchema,
   buildMusicGroupSchema,
@@ -15,15 +15,18 @@ import {
 
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
-const upcomingShows = TOUR_DATES_2027.slice(0, 6);
-const NEWS_POSTS = await listPosts(false);
+const [allShows, NEWS_POSTS] = await Promise.all([
+  getLiveTourDates(),
+  listPosts(false),
+]);
+const upcomingShows = allShows.slice(0, 6);
 const latestNews = NEWS_POSTS.slice(0, 3);
 const featuredAlbums = DISCOGRAPHY.slice(0, 6);
 const latestSingle = DISCOGRAPHY[0];
 const homeSchemas = [
   buildWebsiteSchema(),
   buildMusicGroupSchema(),
-  ...buildTourEventsSchema().slice(0, 6),
+  ...buildTourEventsSchema(allShows).slice(0, 6),
 ];
 ---
 
@@ -114,7 +117,7 @@ const homeSchemas = [
           href="/tour"
           class="font-mono-meta inline-flex items-center gap-2 text-xs font-bold tracking-widest text-crimson uppercase transition-colors hover:text-white"
         >
-          View All {TOUR_DATES_2027.length} Shows
+          View All {allShows.length} Shows
           <Icons name="arrow-right" class="h-4 w-4" />
         </a>
       </div>
@@ -169,7 +172,7 @@ const homeSchemas = [
           Plus <strong class="text-white">Welcome to Rockville</strong> (May 9), <strong class="text-white">Sonic Temple</strong> (May 14), <strong class="text-white">Niagara Falls</strong> (May 29) &amp; more dates announcing soon.
         </p>
         <a href="/tour" class="btn-outline w-full shrink-0 sm:w-auto">
-          All {TOUR_DATES_2027.length} Dates
+          All {allShows.length} Dates
           <Icons name="arrow-right" class="h-4 w-4" />
         </a>
       </div>

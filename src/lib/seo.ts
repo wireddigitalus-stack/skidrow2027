@@ -90,8 +90,19 @@ export function buildMusicGroupSchema() {
   };
 }
 
-export function buildTourEventsSchema() {
-  return TOUR_DATES_2027.map((show) => ({
+export function buildTourEventsSchema(
+  shows: Array<{
+    isoDate: string;
+    city: string;
+    region: string;
+    country: string;
+    venue: string;
+    kind: string;
+    status: string;
+    ticketUrl: string;
+  }> = TOUR_DATES_2027
+) {
+  return shows.map((show) => ({
     '@context': 'https://schema.org',
     '@type': 'MusicEvent',
     name:
@@ -122,7 +133,10 @@ export function buildTourEventsSchema() {
     offers: {
       '@type': 'Offer',
       url: show.ticketUrl,
-      availability: 'https://schema.org/InStock',
+      availability:
+        show.status === 'Sold Out'
+          ? 'https://schema.org/SoldOut'
+          : 'https://schema.org/InStock',
       priceCurrency: show.country === 'CA' ? 'CAD' : 'USD',
     },
   }));

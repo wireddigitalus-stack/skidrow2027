@@ -1,16 +1,16 @@
 import type { APIRoute } from 'astro';
 import { BAND_MEMBERS, BIO_LEAD, BIO_PARAGRAPHS } from '../data/bio';
-import { TOUR_DATES_2027 } from '../data/tour';
 import { DISCOGRAPHY } from '../data/discography';
 import { VIDEOS } from '../data/videos';
 import { SITE } from '../data/site';
 import { listPosts } from '../lib/db';
+import { getLiveTourDates } from '../lib/tourSync';
 import { CANONICAL_BASE, SITE_FAQS } from '../lib/seo';
 
 export const prerender = false;
 
 export const GET: APIRoute = async () => {
-  const posts = await listPosts(false);
+  const [posts, shows] = await Promise.all([listPosts(false), getLiveTourDates()]);
 
   const md = `# Skid Row — Full Authoritative Fact Sheet (${CANONICAL_BASE})
 
@@ -25,8 +25,8 @@ ${BAND_MEMBERS.map((m) => `- **${m.name}** (${m.role} — ${m.badge}): ${m.bio}$
 ## Frequently Asked Questions (Official Answers)
 ${SITE_FAQS.map((f) => `### ${f.q}\n${f.a}`).join('\n\n')}
 
-## Confirmed 2027 North American Tour Dates (${TOUR_DATES_2027.length} Shows)
-${TOUR_DATES_2027.map((s) => `- ${s.isoDate} (${s.weekday}) — ${s.city}, ${s.region}, ${s.country} @ ${s.venue} [${s.kind}] — Tickets: ${s.ticketUrl}`).join('\n')}
+## Confirmed Upcoming Tour Dates (${shows.length} Shows)
+${shows.map((s) => `- ${s.isoDate} (${s.weekday}) — ${s.city}, ${s.region}, ${s.country} @ ${s.venue} [${s.kind}] — Tickets: ${s.ticketUrl}`).join('\n')}
 
 ## Official Discography (1989–2026)
 ${DISCOGRAPHY.map((a) => `- **${a.title}** (${a.year}, ${a.type}) — ${a.description} | Listen: ${a.listenUrl} | Page: ${CANONICAL_BASE}/music/${a.slug}`).join('\n')}
